@@ -8,6 +8,15 @@ from __future__ import annotations
 import re
 from typing import List, Optional
 
+try:
+    import tree_sitter_go as _ts_go
+    from tree_sitter import Language as _TSLanguage, Parser as _TSParser
+    _GO_LANG = _TSLanguage(_ts_go.language())
+    _GO_PARSER = _TSParser(_GO_LANG)
+    _HAS_TS_GO = True
+except Exception:
+    _HAS_TS_GO = False
+
 from ..core.models import (
     FileMetadata,
     NodeType,
@@ -55,6 +64,59 @@ class GenericAdapter(BaseParserAdapter):
 
     def _parse_go(self, file_meta: FileMetadata, lines: List[str], graph: ERCGraph, mod_id: str) -> None:
         rel_path = file_meta.relative_path
+        content = "\n".join(lines)
+
+        # ------------------------------------------------------------------ #
+        # Tree-sitter pass: extract type declarations and method sets         #
+        # ------------------------------------------------------------------ #
+        if _HAS_TS_GO:
+            try:
+                tree = _GO_PARSER.parse(content.encode())
+
+                def _walk(node):
+                    if node.type == 'type_declaration':
+                        for child in node.children:
+                            if child.type == 'type_spec':
+                                name_node = child.child_by_field_name('name')
+                                type_node = child.child_by_field_name('type')
+                                name = name_node.text.decode() if name_node else ''
+                                if not name:
+                                    continue
+                                if type_node and type_node.type == 'interface_type':
+                                    # Extract method names from interface
+                                    methods = []
+                                    for m in type_node.children:
+                                        if m.type == 'method_elem':
+                                            mn = m.child_by_field_name('name')
+                                            if mn:
+                                                methods.append(mn.text.decode())
+                                    graph.register_interface_methods(name, methods)
+                                elif type_node and type_node.type == 'struct_type':
+                                    graph._type_definitions[name] = rel_path
+
+                    elif node.type == 'method_declaration':
+                        recv_node = node.child_by_field_name('receiver')
+                        name_node = node.child_by_field_name('name')
+                        if recv_node and name_node:
+                            method_name = name_node.text.decode()
+                            recv_text = recv_node.text.decode()
+                            is_pointer = '*' in recv_text
+                            m = re.search(r'\*?([A-Z][A-Za-z0-9_]+)', recv_text)
+                            if m:
+                                type_name = m.group(1)
+                                recv_type = 'pointer' if is_pointer else 'value'
+                                graph.register_type_method(type_name, method_name, recv_type)
+
+                    for child in node.children:
+                        _walk(child)
+
+                _walk(tree.root_node)
+            except Exception:
+                pass  # Fall through to regex pass below
+
+        # ------------------------------------------------------------------ #
+        # Regex pass: symbols, routes, env vars (always runs)                 #
+        # ------------------------------------------------------------------ #
 
         # Function & Method patterns: func Foo(..) or func (s *Service) Bar(..)
         fn_pattern = re.compile(r'func\s+(?:\([^)]*\)\s+)?([A-Za-z0-9_]+)\s*\(')
@@ -86,7 +148,7 @@ class GenericAdapter(BaseParserAdapter):
                     )
                 )
 
-            # Interfaces
+            # Interfaces (register symbol node; method sets handled by tree-sitter above)
             m_iface = iface_pattern.search(line)
             if m_iface:
                 name = m_iface.group(1)

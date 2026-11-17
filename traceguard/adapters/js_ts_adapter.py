@@ -123,24 +123,30 @@ class JavaScriptAdapter(BaseParserAdapter):
         """Extract fetch(), axios.get(), axios.post(), etc."""
         rel_path = file_meta.relative_path
 
-        # fetch('/api/...', { method: 'POST' })
+        # fetch('/api/...', { method: 'POST' }) or fetch('/tasks/' + id, { method: 'DELETE' })
         fetch_pattern = re.compile(
-            r'fetch\s*\(\s*[\'"`]([^\'"`$]+)[\'"`](?:\s*,\s*\{[^}]*method\s*:\s*[\'"]([A-Z]+)[\'"])?',
+            r'fetch\s*\(\s*[\'"`]([^\'"`]+)[\'"`](\s*\+\s*[a-zA-Z0-9_\.]+)?(?:\s*,\s*\{[^}]*method\s*:\s*[\'"]([A-Z]+)[\'"])?',
             re.IGNORECASE,
         )
         # axios.get('/api/...'), axios.post('/api/...')
         axios_pattern = re.compile(
-            r'(?:axios|apiClient|httpClient|client)\.(get|post|put|delete|patch)\s*\(\s*[\'"`]([^\'"`$]+)[\'"`]',
+            r'(?:axios|apiClient|httpClient|client)\.(get|post|put|delete|patch)\s*\(\s*[\'"`]([^\'"`]+)[\'"`]',
             re.IGNORECASE,
         )
 
         for idx, line in enumerate(lines, start=1):
             # check fetch
             for m in fetch_pattern.finditer(line):
-                path = m.group(1).strip()
-                method = m.group(2).upper() if m.group(2) else "GET"
+                raw_path = m.group(1).strip()
+                has_concat = bool(m.group(2))
+                clean_path = re.sub(r'^\$\{[A-Za-z0-9_]+\}', '', raw_path)
+                clean_path = re.sub(r'\$\{[^}]+\}', '{id}', clean_path)
+                path = clean_path.split('?')[0].strip()
+                if has_concat and path.endswith('/'):
+                    path = path + '{id}'
+                method = m.group(3).upper() if m.group(3) else "GET"
                 # Exclude static assets or external URLs (http://, https://)
-                if not path.startswith("http://") and not path.startswith("https://"):
+                if path and not path.startswith("http://") and not path.startswith("https://"):
                     call_id = f"apicall:{rel_path}:{method}:{path}:{idx}"
                     graph.add_symbol(
                         Symbol(
@@ -165,8 +171,11 @@ class JavaScriptAdapter(BaseParserAdapter):
             # check axios / client
             for m in axios_pattern.finditer(line):
                 method = m.group(1).upper()
-                path = m.group(2).strip()
-                if not path.startswith("http://") and not path.startswith("https://"):
+                raw_path = m.group(2).strip()
+                clean_path = re.sub(r'^\$\{[A-Za-z0-9_]+\}', '', raw_path)
+                clean_path = re.sub(r'\$\{[^}]+\}', '{id}', clean_path)
+                path = clean_path.split('?')[0].strip()
+                if path and not path.startswith("http://") and not path.startswith("https://"):
                     call_id = f"apicall:{rel_path}:{method}:{path}:{idx}"
                     graph.add_symbol(
                         Symbol(
