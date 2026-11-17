@@ -76,6 +76,8 @@ class AuditPipeline:
 
         # Step 4, 5, 6: Structural analysis, IR construction, ERCG construction
         graph = ERCGraph()
+        self.graph = graph
+        self.context.graph = graph
         for meta in files_meta:
             content = files_content.get(meta.relative_path, "")
             for adapter in self.adapters:

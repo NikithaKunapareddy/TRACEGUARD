@@ -140,6 +140,30 @@ def _run_audit_background(
         engine = IncrementalAuditEngine(ctx, DB_PATH)
         report = engine.run()
 
+        # Extract graph visualization nodes & edges for 3D viewer
+        graph_nodes = []
+        graph_edges = []
+        graph = getattr(engine, "graph", getattr(ctx, "graph", None))
+        if graph and hasattr(graph, "_graph"):
+            try:
+                for nid in list(graph._graph.nodes())[:150]:
+                    sym = graph.get_symbol(nid)
+                    graph_nodes.append({
+                        "id": str(nid),
+                        "name": sym.name if sym else str(nid),
+                        "kind": (sym.kind.value if hasattr(sym.kind, "value") else str(sym.kind)) if sym else "node",
+                        "file": str(sym.file_path) if sym else "",
+                        "line": sym.line_number if sym else 0,
+                    })
+                for u, v, data in list(graph._graph.edges(data=True))[:250]:
+                    graph_edges.append({
+                        "source": str(u),
+                        "target": str(v),
+                        "relation": str(data.get("relation", "link")),
+                    })
+            except Exception:
+                pass
+
         a = report.assessment
         _audit_store[audit_id].update({
             "status":          "completed",
@@ -154,6 +178,8 @@ def _run_audit_background(
             "disclaimer":      a.disclaimer,
             "execution_time":  report.execution_time_seconds,
             "graph_stats":     report.graph_stats,
+            "graph_nodes":     graph_nodes,
+            "graph_edges":     graph_edges,
             "report_dict":     report.model_dump(),
         })
     except Exception as exc:
@@ -264,7 +290,7 @@ def get_audit_findings(
 
 @app.get("/api/v1/audits/{audit_id}/graph")
 def get_audit_graph(audit_id: str) -> Dict[str, Any]:
-    """Return graph statistics and overview for a completed audit."""
+    """Return graph statistics, overview, nodes, and edges for a completed audit."""
     state = _audit_store.get(audit_id)
     if state and state.get("status") == "completed":
         return {
@@ -272,6 +298,8 @@ def get_audit_graph(audit_id: str) -> Dict[str, Any]:
             "graph_stats": state.get("graph_stats", {}),
             "overview":    state["report_dict"].get("overview", {}),
             "graph_coverage": state["report_dict"].get("graph_coverage"),
+            "nodes":       state.get("graph_nodes", []),
+            "edges":       state.get("graph_edges", []),
         }
     raise HTTPException(
         status_code=404,

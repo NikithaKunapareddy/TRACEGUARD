@@ -148,4 +148,17 @@ export const traceguardApi = {
     if (!res.ok) throw new Error(`Failed to fetch report: ${res.statusText}`);
     return res.json();
   },
+
+  async getGraph(auditId: string): Promise<{
+    audit_id: string;
+    graph_stats: any;
+    overview: any;
+    graph_coverage?: any;
+    nodes: Array<{ id: string; name: string; kind: string; file: string; line: number }>;
+    edges: Array<{ source: string; target: string; relation: string }>;
+  }> {
+    const res = await fetch(`${BASE_URL}/api/v1/audits/${encodeURIComponent(auditId)}/graph`);
+    if (!res.ok) throw new Error(`Failed to fetch graph: ${res.statusText}`);
+    return res.json();
+  },
 };

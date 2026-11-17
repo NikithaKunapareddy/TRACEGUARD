@@ -119,6 +119,7 @@ class IncrementalAuditEngine:
 
         # Run full audit with lifecycle comparison
         report = pipeline.run(prev_findings=prev_findings)
+        self.graph = getattr(pipeline, "graph", None)
 
         # Persist results
         assessment = report.assessment

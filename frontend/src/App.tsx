@@ -1,18 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { traceguardApi, AuditStatus, Finding } from "./api/client";
+import { CyberHeader } from "./components/CyberHeader";
 import { AuditForm } from "./components/AuditForm";
-import { ScoreCard } from "./components/ScoreCard";
-import { FindingsTable } from "./components/FindingsTable";
+import { ConsistencyGraph3D, GraphNode, GraphEdge } from "./components/ConsistencyGraph3D";
+import { IntegrityScoreRadar } from "./components/IntegrityScoreRadar";
+import { FindingsExplorer } from "./components/FindingsExplorer";
+import { NegativeSpaceView } from "./components/NegativeSpaceView";
+import { ReportsExportView } from "./components/ReportsExportView";
+import { Globe2, BarChart3, ShieldAlert, Puzzle, FileText, Loader2 } from "lucide-react";
 
 export const App: React.FC = () => {
   const [currentAuditId, setCurrentAuditId] = useState<string | null>(null);
   const [auditStatus, setAuditStatus] = useState<AuditStatus | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [totalFindings, setTotalFindings] = useState<number>(0);
+  const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
+  const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
   const [polling, setPolling] = useState<boolean>(false);
   const [serverHealth, setServerHealth] = useState<boolean | null>(null);
+  const [selectedRepo, setSelectedRepo] = useState<string>(
+    "./benchmark_repos/repo1_ecommerce_fullstack"
+  );
+  const [activeTab, setActiveTab] = useState<"graph" | "score" | "findings" | "negspace" | "reports">(
+    "graph"
+  );
 
-  // Check health on mount
+  // Health check on mount
   useEffect(() => {
     traceguardApi
       .health()
@@ -20,7 +33,7 @@ export const App: React.FC = () => {
       .catch(() => setServerHealth(false));
   }, []);
 
-  // Poll audit status
+  // Polling audit lifecycle
   useEffect(() => {
     if (!currentAuditId || !polling) return;
 
@@ -32,16 +45,25 @@ export const App: React.FC = () => {
         if (res.status === "completed" || res.status === "failed") {
           setPolling(false);
           if (res.status === "completed") {
-            // Load findings
-            const fRes = await traceguardApi.getFindings(currentAuditId, 1, 100);
+            // Fetch findings
+            const fRes = await traceguardApi.getFindings(currentAuditId, 1, 150);
             setFindings(fRes.findings);
             setTotalFindings(fRes.total);
+
+            // Fetch graph
+            try {
+              const gRes = await traceguardApi.getGraph(currentAuditId);
+              if (gRes.nodes) setGraphNodes(gRes.nodes);
+              if (gRes.edges) setGraphEdges(gRes.edges);
+            } catch (gErr) {
+              console.warn("Could not load 3D graph data:", gErr);
+            }
           }
         }
       } catch (err) {
         console.error("Polling error:", err);
       }
-    }, 1500);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [currentAuditId, polling]);
@@ -51,84 +73,174 @@ export const App: React.FC = () => {
     setAuditStatus({ audit_id: id, status: "running" });
     setFindings([]);
     setTotalFindings(0);
+    setGraphNodes([]);
+    setGraphEdges([]);
     setPolling(true);
   };
 
+  const handleSelectPresetRepo = (path: string) => {
+    setSelectedRepo(path);
+  };
+
+  const handleSelectNode = (nodeName: string) => {
+    setActiveTab("findings");
+  };
+
+  const tabs = [
+    { key: "graph", label: "🌐 3D Consistency Map", icon: Globe2 },
+    { key: "score", label: "📊 Integrity Assessment", icon: BarChart3 },
+    {
+      key: "findings",
+      label: `🛡️ Findings (${findings.length})`,
+      icon: ShieldAlert,
+      badgeColor: findings.some((f) => f.severity === "critical") ? "#f43f5e" : "#38bdf8",
+    },
+    { key: "negspace", label: "🧩 Negative-Space Gaps", icon: Puzzle },
+    { key: "reports", label: "📄 Reports & Exports", icon: FileText },
+  ];
+
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "32px 16px" }}>
-      {/* Header */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div>
-          <h1 style={{ margin: "0 0 6px 0", fontSize: "28px", color: "#0f172a", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span>🛡️</span> TraceGuard
-          </h1>
-          <p style={{ margin: 0, color: "#64748b", fontSize: "15px" }}>
-            Architecture-Agnostic Repository Integrity Agent
-          </p>
-        </div>
+    <div style={{ maxWidth: "1320px", margin: "0 auto", padding: "28px 24px" }}>
+      {/* Cyber Header with Live Health & Preset Selector */}
+      <CyberHeader
+        serverHealth={serverHealth}
+        onSelectPresetRepo={handleSelectPresetRepo}
+        selectedRepo={selectedRepo}
+      />
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-              backgroundColor: serverHealth === true ? "#16a34a" : serverHealth === false ? "#dc2626" : "#d97706",
-              display: "inline-block",
-            }}
-          />
-          <span style={{ fontSize: "13px", color: "#64748b" }}>
-            Backend API: {serverHealth === true ? "Online (FastAPI)" : serverHealth === false ? "Offline" : "Connecting..."}
-          </span>
-        </div>
-      </header>
+      {/* Main Audit Control Form */}
+      <AuditForm
+        onAuditStarted={handleAuditStarted}
+        repoPath={selectedRepo}
+        setRepoPath={setSelectedRepo}
+      />
 
-      {/* Main Form */}
-      <AuditForm onAuditStarted={handleAuditStarted} />
-
-      {/* Running Indicator */}
+      {/* Real-time Scanning Progress Bar */}
       {polling && auditStatus?.status === "running" && (
         <div
           style={{
-            background: "#eff6ff",
-            border: "1px solid #bfdbfe",
-            borderRadius: "8px",
+            background: "rgba(56, 189, 248, 0.1)",
+            border: "1px solid rgba(56, 189, 248, 0.3)",
+            borderRadius: "14px",
             padding: "16px 20px",
             marginBottom: "24px",
             display: "flex",
             alignItems: "center",
-            gap: "12px",
-            color: "#1e40af",
+            gap: "14px",
           }}
         >
-          <div style={{ fontWeight: 600 }}>Analyzing Repository Structure & ERCG Graph...</div>
-          <span style={{ fontSize: "13px", color: "#3b82f6" }}>
-            Building intermediate representation, running 4 engines, checking negative-space relations.
-          </span>
+          <Loader2 size={20} color="#38bdf8" className="radar-sweep" />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: "14px", color: "#38bdf8", marginBottom: "2px" }}>
+              Analyzing AST, Extracting Symbols & Traversing ERCG Consistency Graph...
+            </div>
+            <div style={{ fontSize: "12px", color: "#94a3b8" }}>
+              Audit ID: {currentAuditId} • Target: {selectedRepo}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Results View */}
+      {/* Navigation Tab Bar */}
       {auditStatus && auditStatus.status === "completed" && (
         <>
-          <ScoreCard status={auditStatus} />
-          <FindingsTable findings={findings} total={totalFindings} />
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+              paddingBottom: "12px",
+              marginBottom: "24px",
+              overflowX: "auto",
+            }}
+          >
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as any)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "10px 18px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: isActive ? 700 : 500,
+                    background: isActive ? "rgba(56, 189, 248, 0.15)" : "rgba(15, 23, 42, 0.5)",
+                    border: isActive
+                      ? "1px solid rgba(56, 189, 248, 0.4)"
+                      : "1px solid rgba(255, 255, 255, 0.05)",
+                    color: isActive ? "#38bdf8" : "#94a3b8",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Icon size={16} color={isActive ? "#38bdf8" : "#64748b"} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Tab View */}
+          {activeTab === "graph" && (
+            <div style={{ marginBottom: "28px" }}>
+              <ConsistencyGraph3D
+                nodes={graphNodes}
+                edges={graphEdges}
+                findings={findings}
+                onSelectNode={handleSelectNode}
+              />
+            </div>
+          )}
+
+          {activeTab === "score" && (
+            <IntegrityScoreRadar status={auditStatus} />
+          )}
+
+          {activeTab === "findings" && (
+            <FindingsExplorer findings={findings} total={totalFindings} />
+          )}
+
+          {activeTab === "negspace" && (
+            <NegativeSpaceView findings={findings} />
+          )}
+
+          {activeTab === "reports" && currentAuditId && (
+            <ReportsExportView auditId={currentAuditId} />
+          )}
         </>
       )}
 
-      {auditStatus && auditStatus.status === "failed" && (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: "8px",
-            padding: "16px 20px",
-            color: "#991b1b",
-          }}
-        >
-          <strong>Audit Execution Failed:</strong> {auditStatus.error || "An unexpected error occurred."}
+      {/* Footer */}
+      <footer
+        style={{
+          marginTop: "48px",
+          paddingTop: "20px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: "12px",
+          color: "#64748b",
+        }}
+      >
+        <div>
+          TraceGuard • Architecture-Agnostic Structural & Security Integrity Agent
         </div>
-      )}
+        <div style={{ display: "flex", gap: "16px" }}>
+          <span>Python 3.11+</span>
+          <span>FastAPI</span>
+          <span>NetworkX</span>
+          <span>Tree-sitter</span>
+          <span>Three.js</span>
+          <span>React 18</span>
+        </div>
+      </footer>
     </div>
   );
 };

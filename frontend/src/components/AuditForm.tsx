@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import { traceguardApi, AuditRequest } from "../api/client";
+import { Play, Shield, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
 
 interface AuditFormProps {
   onAuditStarted: (auditId: string) => void;
+  repoPath: string;
+  setRepoPath: (path: string) => void;
 }
 
-export const AuditForm: React.FC<AuditFormProps> = ({ onAuditStarted }) => {
-  const [repoPath, setRepoPath] = useState("./benchmark_repos/repo1_ecommerce_fullstack");
+export const AuditForm: React.FC<AuditFormProps> = ({
+  onAuditStarted,
+  repoPath,
+  setRepoPath,
+}) => {
   const [minSeverity, setMinSeverity] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [incremental, setIncremental] = useState(true);
@@ -14,10 +20,10 @@ export const AuditForm: React.FC<AuditFormProps> = ({ onAuditStarted }) => {
   const [error, setError] = useState<string | null>(null);
 
   const availableCategories = [
-    { key: "security", label: "Security Vulnerabilities" },
-    { key: "gap", label: "Negative-Space & Gaps" },
-    { key: "slop", label: "Code Slop & Redundancy" },
-    { key: "loose_end", label: "Loose Ends & Hygiene" },
+    { key: "security", label: "🛡️ Security Vulnerabilities" },
+    { key: "gap", label: "🧩 Negative-Space & Gaps" },
+    { key: "slop", label: "🧹 Code Slop & Redundancy" },
+    { key: "loose_end", label: "⏳ Loose Ends & Hygiene" },
   ];
 
   const toggleCategory = (key: string) => {
@@ -56,21 +62,27 @@ export const AuditForm: React.FC<AuditFormProps> = ({ onAuditStarted }) => {
   return (
     <div
       style={{
-        background: "#ffffff",
-        borderRadius: "12px",
+        background: "rgba(15, 23, 42, 0.75)",
+        backdropFilter: "blur(16px)",
+        borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        marginBottom: "24px",
-        border: "1px solid #e2e8f0",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        marginBottom: "28px",
+        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
       }}
     >
-      <h2 style={{ margin: "0 0 16px 0", fontSize: "18px", color: "#1e293b" }}>
-        Launch Repository Integrity Audit
-      </h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: "8px" }}>
+          <Sparkles size={18} color="#38bdf8" /> Launch Repository Integrity Audit
+        </h2>
+        <span style={{ fontSize: "12px", color: "#64748b" }}>
+          Target filesystem remains strictly read-only
+        </span>
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "16px" }}>
-          <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "#334155", marginBottom: "6px" }}>
+        <div style={{ marginBottom: "18px" }}>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#cbd5e1", marginBottom: "6px" }}>
             Repository Filesystem Path
           </label>
           <input
@@ -80,21 +92,22 @@ export const AuditForm: React.FC<AuditFormProps> = ({ onAuditStarted }) => {
             placeholder="e.g. ./benchmark_repos/repo1_ecommerce_fullstack"
             style={{
               width: "100%",
-              padding: "10px 12px",
-              borderRadius: "6px",
-              border: "1px solid #cbd5e1",
+              padding: "12px 14px",
+              borderRadius: "10px",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              background: "rgba(3, 7, 18, 0.6)",
+              color: "#f8fafc",
               fontSize: "14px",
-              boxSizing: "border-box",
+              fontFamily: "JetBrains Mono, monospace",
+              outline: "none",
+              transition: "border 0.2s ease",
             }}
           />
-          <span style={{ fontSize: "12px", color: "#64748b" }}>
-            Read-only access strictly enforced; no files in target repository are modified.
-          </span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "18px" }}>
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "#334155", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#cbd5e1", marginBottom: "6px" }}>
               Minimum Severity Threshold
             </label>
             <select
@@ -103,74 +116,85 @@ export const AuditForm: React.FC<AuditFormProps> = ({ onAuditStarted }) => {
               style={{
                 width: "100%",
                 padding: "10px 12px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-                fontSize: "14px",
-                backgroundColor: "#fff",
+                borderRadius: "8px",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                background: "#080c18",
+                color: "#f8fafc",
+                fontSize: "13px",
+                outline: "none",
               }}
             >
-              <option value="">All Severities (info - critical)</option>
-              <option value="low">Low & above</option>
-              <option value="medium">Medium & above</option>
-              <option value="high">High & above</option>
-              <option value="critical">Critical only</option>
+              <option value="">All Severities (info → critical)</option>
+              <option value="low">Low, Medium, High & Critical</option>
+              <option value="medium">Medium, High & Critical</option>
+              <option value="high">High & Critical Only</option>
+              <option value="critical">Critical Vulnerabilities Only</option>
             </select>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", paddingTop: "24px" }}>
-            <label style={{ display: "flex", alignItems: "center", cursor: "pointer", fontSize: "14px", color: "#334155" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px", color: "#cbd5e1" }}>
               <input
                 type="checkbox"
                 checked={incremental}
                 onChange={(e) => setIncremental(e.target.checked)}
-                style={{ marginRight: "8px" }}
+                style={{ width: "16px", height: "16px", accentColor: "#38bdf8" }}
               />
-              Enable Change-Aware Incremental Auditing
+              <span style={{ fontWeight: 600 }}>Enable Change-Aware Incremental Auditing</span>
             </label>
           </div>
         </div>
 
+        {/* Category Pills */}
         <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "#334155", marginBottom: "8px" }}>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#cbd5e1", marginBottom: "8px" }}>
             Filter Categories (Optional)
           </label>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            {availableCategories.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => toggleCategory(c.key)}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  border: "1px solid",
-                  borderColor: categories.includes(c.key) ? "#2563eb" : "#cbd5e1",
-                  backgroundColor: categories.includes(c.key) ? "#eff6ff" : "#ffffff",
-                  color: categories.includes(c.key) ? "#1d4ed8" : "#475569",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  fontWeight: categories.includes(c.key) ? 600 : 400,
-                }}
-              >
-                {c.label}
-              </button>
-            ))}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {availableCategories.map((cat) => {
+              const active = categories.includes(cat.key);
+              return (
+                <button
+                  type="button"
+                  key={cat.key}
+                  onClick={() => toggleCategory(cat.key)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "9999px",
+                    border: active ? "1px solid #38bdf8" : "1px solid rgba(255, 255, 255, 0.08)",
+                    background: active ? "rgba(56, 189, 248, 0.2)" : "rgba(11, 17, 32, 0.6)",
+                    color: active ? "#38bdf8" : "#94a3b8",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {/* Error message */}
         {error && (
           <div
             style={{
-              padding: "10px 14px",
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "6px",
-              color: "#b91c1c",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              background: "rgba(244, 63, 94, 0.15)",
+              border: "1px solid rgba(244, 63, 94, 0.3)",
+              color: "#f87171",
               fontSize: "13px",
               marginBottom: "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            {error}
+            <AlertCircle size={16} />
+            <span>{error}</span>
           </div>
         )}
 
@@ -178,18 +202,23 @@ export const AuditForm: React.FC<AuditFormProps> = ({ onAuditStarted }) => {
           type="submit"
           disabled={loading}
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#2563eb",
-            color: "#ffffff",
+            background: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
             border: "none",
-            borderRadius: "6px",
+            borderRadius: "10px",
+            padding: "12px 28px",
+            color: "#ffffff",
             fontSize: "14px",
-            fontWeight: 600,
+            fontWeight: 700,
             cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "10px",
+            boxShadow: "0 4px 15px rgba(56, 189, 248, 0.4)",
+            transition: "all 0.2s ease",
           }}
         >
-          {loading ? "Initializing Audit..." : "Run TraceGuard Audit"}
+          {loading ? <RefreshCw size={16} className="radar-sweep" /> : <Play size={16} />}
+          {loading ? "Executing Audit Pipeline..." : "Run TraceGuard Audit"}
         </button>
       </form>
     </div>
