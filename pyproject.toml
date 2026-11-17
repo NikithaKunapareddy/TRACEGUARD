@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "traceguard"
+version = "0.1.0"
+description = "Architecture-Agnostic Repository Integrity Agent"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "TraceGuard Team"}
+]
+dependencies = [
+    "rich>=13.0.0",
+    "networkx>=3.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+traceguard = "traceguard.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["traceguard*"]
