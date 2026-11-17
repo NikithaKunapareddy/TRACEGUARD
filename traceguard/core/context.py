@@ -85,10 +85,16 @@ class AuditConfig(BaseModel):
 
 
 class AuditContext:
-    def __init__(self, root_dir: str | Path, config: Optional[AuditConfig] = None):
+    def __init__(
+        self,
+        root_dir: str | Path,
+        config: Optional[AuditConfig] = None,
+        audit_id: Optional[str] = None,
+    ):
         self.root_dir = Path(root_dir).resolve()
         self.repo_path = self.root_dir
         self.config = config or AuditConfig()
+        self.audit_id = audit_id
         self.ignored_dirs: Set[str] = set(DEFAULT_IGNORED_DIRS)
         self.ignored_extensions: Set[str] = set(DEFAULT_IGNORED_EXTENSIONS)
         self._load_ignore_files()

@@ -67,12 +67,22 @@ export interface AuditStatus {
 }
 
 export interface AuditHistoryItem {
+  id?: string;
   audit_id: string;
   repo_path: string;
+  repo_name?: string;
   status: string;
   overall_score?: number;
+  security_risk_score?: number;
+  implementation_completeness_score?: number;
+  code_quality_score?: number;
+  development_hygiene_score?: number;
   rating?: string;
   total_findings?: number;
+  critical_count?: number;
+  high_count?: number;
+  medium_count?: number;
+  low_count?: number;
   incremental?: boolean;
   created_at?: string;
   completed_at?: string;
@@ -82,9 +92,14 @@ export interface AuditCompareResult {
   audit_id_1: string;
   audit_id_2: string;
   score_delta: number;
+  score_previous?: number;
+  score_current?: number;
   new_findings: Finding[];
   resolved_findings: Finding[];
   persisting_findings: Finding[];
+  resolved_count?: number;
+  new_count?: number;
+  persistent_count?: number;
 }
 
 export interface PaginatedFindings {
@@ -183,12 +198,29 @@ export const traceguardApi = {
     return res.json();
   },
 
-  async listAudits(repoPath?: string, limit = 20): Promise<AuditHistoryItem[]> {
-    const params = new URLSearchParams({ limit: String(limit) });
+  async listAudits(
+    repoPath?: string,
+    status?: string,
+    limit = 50,
+    offset = 0
+  ): Promise<AuditHistoryItem[]> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
     if (repoPath) params.set("repo_path", repoPath);
+    if (status) params.set("status", status);
     const res = await fetch(`${BASE_URL}/api/v1/audits?${params}`);
     if (!res.ok) throw new Error(`Failed to list audits: ${res.statusText}`);
-    return res.json();
+    const data = await res.json();
+    const rawList: any[] = Array.isArray(data) ? data : data.audits || [];
+    return rawList.map((item) => ({
+      ...item,
+      audit_id: String(item.audit_id || item.id || ""),
+      repo_name: item.repo_name || (item.repo_path ? item.repo_path.split(/[/\\]/).pop() : "Unknown"),
+      incremental: typeof item.incremental === "boolean" ? item.incremental : Boolean(item.is_incremental),
+      created_at: item.created_at || item.started_at,
+    }));
   },
 
   async compareAudits(id1: string, id2: string): Promise<AuditCompareResult> {

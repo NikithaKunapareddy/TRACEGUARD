@@ -139,9 +139,9 @@ def _run_audit_background(
 ) -> None:
     _audit_store[audit_id]["status"] = "running"
     try:
-        ctx = AuditContext(Path(repo_path), config)
-        engine = IncrementalAuditEngine(ctx, DB_PATH)
-        report = engine.run()
+        ctx = AuditContext(Path(repo_path), config, audit_id=audit_id)
+        engine = IncrementalAuditEngine(ctx, DB_PATH, audit_id=audit_id)
+        report = engine.run(audit_id=audit_id)
 
         # Extract graph visualization nodes & edges for 3D viewer
         graph_nodes = []
@@ -168,6 +168,22 @@ def _run_audit_background(
                 pass
 
         a = report.assessment
+        report_dict = report.model_dump()
+        report_dict["graph_nodes"] = graph_nodes
+        report_dict["graph_edges"] = graph_edges
+
+        # Persist enriched report with graph visualization into SQLite
+        try:
+            conn = get_connection(DB_PATH)
+            conn.execute(
+                "UPDATE audits SET report_json=? WHERE id=?",
+                (json.dumps(report_dict), audit_id),
+            )
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
         _audit_store[audit_id].update({
             "status":          "completed",
             "total_findings":  len(report.findings),
@@ -183,7 +199,7 @@ def _run_audit_background(
             "graph_stats":     report.graph_stats,
             "graph_nodes":     graph_nodes,
             "graph_edges":     graph_edges,
-            "report_dict":     report.model_dump(),
+            "report_dict":     report_dict,
         })
     except Exception as exc:
         _audit_store[audit_id]["status"] = "failed"
@@ -232,10 +248,21 @@ async def create_audit(
 @app.get("/api/v1/audits")
 def get_historical_audits(
     repo_path: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    sort_order: str = Query("desc", pattern="^(desc|asc)$"),
 ) -> List[Dict[str, Any]]:
-    """List historical audits from SQLite persistence."""
-    return list_audits(repo_path=repo_path, limit=limit, db_path=DB_PATH)
+    """List historical audits from SQLite persistence with filtering and pagination."""
+    sort_desc = sort_order.lower() == "desc"
+    return list_audits(
+        repo_path=repo_path,
+        status=status,
+        limit=limit,
+        offset=offset,
+        sort_desc=sort_desc,
+        db_path=DB_PATH,
+    )
 
 
 @app.get("/api/v1/audits/{audit_id_1}/compare/{audit_id_2}")
@@ -249,11 +276,11 @@ def compare_two_audits(audit_id_1: str, audit_id_2: str) -> Dict[str, Any]:
             raise HTTPException(status_code=404, detail="One or both audits not found.")
 
         f1 = conn.execute(
-            "SELECT stable_id, severity, category, title, lifecycle_state FROM findings WHERE audit_id=?",
+            "SELECT stable_id, severity, category, title, lifecycle_state, affected_file, line_number, snippet, technical_explanation, potential_impact, recommended_remediation FROM findings WHERE audit_id=?",
             (audit_id_1,),
         ).fetchall()
         f2 = conn.execute(
-            "SELECT stable_id, severity, category, title, lifecycle_state FROM findings WHERE audit_id=?",
+            "SELECT stable_id, severity, category, title, lifecycle_state, affected_file, line_number, snippet, technical_explanation, potential_impact, recommended_remediation FROM findings WHERE audit_id=?",
             (audit_id_2,),
         ).fetchall()
 
@@ -268,6 +295,8 @@ def compare_two_audits(audit_id_1: str, audit_id_2: str) -> Dict[str, Any]:
         score_2 = a2["overall_score"] if a2["overall_score"] is not None else 100.0
 
         return {
+            "audit_id_1": audit_id_1,
+            "audit_id_2": audit_id_2,
             "previous_audit_id": audit_id_1,
             "current_audit_id": audit_id_2,
             "score_previous": score_1,
@@ -280,6 +309,8 @@ def compare_two_audits(audit_id_1: str, audit_id_2: str) -> Dict[str, Any]:
             "persistent_count": len(persistent_ids),
             "resolved_findings": [f1_map[sid] for sid in resolved_ids],
             "new_findings": [f2_map[sid] for sid in new_ids],
+            "persisting_findings": [f2_map[sid] for sid in persistent_ids],
+            "persistent_findings": [f2_map[sid] for sid in persistent_ids],
         }
     finally:
         conn.close()
@@ -290,14 +321,44 @@ def get_audit_status(audit_id: str) -> Dict[str, Any]:
     """Get status and summary for a given audit."""
     state = _audit_store.get(audit_id)
     if state:
-        return {k: v for k, v in state.items() if k != "report_dict"}
+        res = {k: v for k, v in state.items() if k != "report_dict"}
+        res["audit_id"] = audit_id
+        res["id"] = audit_id
+        return res
 
-    # Try SQLite for audits not in memory (e.g. after restart)
+    # Try SQLite for audits not in memory (e.g. after restart or from history)
     conn = get_connection(DB_PATH)
-    row  = conn.execute("SELECT * FROM audits WHERE id=?", (audit_id,)).fetchone()
+    row = conn.execute("SELECT * FROM audits WHERE id=?", (audit_id,)).fetchone()
     conn.close()
     if row:
-        return dict(row)
+        d = {
+            "audit_id": row["id"],
+            "id": row["id"],
+            "status": row["status"],
+            "repo_path": row["repo_path"],
+            "total_findings": row["total_findings"],
+            "overall_score": row["overall_score"],
+            "security_risk_score": row["security_risk_score"],
+            "implementation_completeness_score": row["impl_completeness_score"],
+            "code_quality_score": row["code_quality_score"],
+            "development_hygiene_score": row["dev_hygiene_score"],
+            "rating": row["rating"],
+            "is_incremental": bool(row["is_incremental"]),
+            "incremental": bool(row["is_incremental"]),
+            "created_at": row["started_at"],
+            "completed_at": row["completed_at"],
+        }
+        if row["report_json"]:
+            try:
+                rep = json.loads(row["report_json"])
+                assessment = rep.get("assessment", {})
+                d["disclaimer"] = assessment.get("disclaimer", "")
+                d["summary_verdict"] = assessment.get("summary_verdict", "")
+                d["execution_time"] = rep.get("execution_time_seconds", 0)
+                d["graph_stats"] = rep.get("graph_stats", {})
+            except Exception:
+                pass
+        return d
 
     raise HTTPException(status_code=404, detail=f"Audit {audit_id!r} not found.")
 
@@ -312,26 +373,39 @@ def get_audit_findings(
 ) -> Dict[str, Any]:
     """
     Return paginated, optionally-filtered findings for a completed audit.
+    Works seamlessly from memory or persisted SQLite records.
     """
     state = _audit_store.get(audit_id)
+    raw = None
     if state and state.get("status") == "completed":
         raw = state["report_dict"].get("findings", [])
     else:
-        rows = get_audit_findings_rows(audit_id)
-        if rows is None:
-            raise HTTPException(status_code=404, detail=f"Audit {audit_id!r} not found.")
-        raw = [dict(r) for r in rows]
+        conn = get_connection(DB_PATH)
+        row = conn.execute("SELECT report_json FROM audits WHERE id=?", (audit_id,)).fetchone()
+        conn.close()
+        if row and row["report_json"]:
+            try:
+                rep = json.loads(row["report_json"])
+                raw = rep.get("findings", [])
+            except Exception:
+                pass
+        if raw is None:
+            rows = get_audit_findings_rows(audit_id)
+            if rows is not None and len(rows) > 0:
+                raw = [dict(r) for r in rows]
 
-    if not raw and state and state.get("status") not in ("completed", None):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Audit {audit_id!r} is {state.get('status', 'unknown')}.",
-        )
+    if raw is None:
+        if state and state.get("status") not in ("completed", None):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Audit {audit_id!r} is {state.get('status', 'unknown')}.",
+            )
+        raise HTTPException(status_code=404, detail=f"Audit {audit_id!r} not found.")
 
     # Filtering
     SEV_ORDER = {"critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1}
     if category:
-        raw = [f for f in raw if str(f.get("category", "")) == category]
+        raw = [f for f in raw if str(f.get("category", "")).lower() == category.lower()]
     if min_severity:
         min_val = SEV_ORDER.get(min_severity.lower(), 0)
         raw = [f for f in raw if SEV_ORDER.get(str(f.get("severity", "")).lower(), 0) >= min_val]
@@ -360,6 +434,39 @@ def get_audit_graph(audit_id: str) -> Dict[str, Any]:
             "nodes":       state.get("graph_nodes", []),
             "edges":       state.get("graph_edges", []),
         }
+
+    # Fallback to SQLite persistence for historical audits or post-restart
+    conn = get_connection(DB_PATH)
+    row = conn.execute("SELECT report_json FROM audits WHERE id=?", (audit_id,)).fetchone()
+    conn.close()
+    if row and row["report_json"]:
+        try:
+            rep = json.loads(row["report_json"])
+            nodes = rep.get("graph_nodes", [])
+            edges = rep.get("graph_edges", [])
+            # Reconstruct basic nodes from findings if not stored
+            if not nodes:
+                nodes = []
+                for f in rep.get("findings", []):
+                    f_id = f.get("id") or f.get("stable_id")
+                    nodes.append({
+                        "id": str(f_id),
+                        "name": f.get("title", str(f_id)),
+                        "kind": f.get("category", "finding"),
+                        "file": f.get("affected_file", ""),
+                        "line": f.get("line_number", 0),
+                    })
+            return {
+                "audit_id": audit_id,
+                "graph_stats": rep.get("graph_stats", {}),
+                "overview": rep.get("overview", {}),
+                "graph_coverage": rep.get("graph_coverage"),
+                "nodes": nodes,
+                "edges": edges,
+            }
+        except Exception:
+            pass
+
     raise HTTPException(
         status_code=404,
         detail=f"Audit {audit_id!r} not found or not yet completed.",

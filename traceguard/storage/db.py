@@ -204,27 +204,73 @@ def get_file_hashes(audit_id: str, db_path: Path = DB_PATH) -> Dict[str, str]:
 
 
 def list_audits(
-    repo_path: Optional[str] = None, limit: int = 50, db_path: Path = DB_PATH
+    repo_path: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    sort_desc: bool = True,
+    db_path: Path = DB_PATH,
 ) -> List[Dict[str, Any]]:
-    """Return historical audits, ordered by started_at DESC."""
+    """
+    Return historical audits from SQLite with enriched statistics.
+    Includes both 'id' and 'audit_id' keys, breakdown of findings by severity,
+    and safe repository identifiers.
+    """
     conn = get_connection(db_path)
     try:
+        query = """
+            SELECT id, repo_path, started_at, completed_at, status, is_incremental,
+                   overall_score, security_risk_score, impl_completeness_score,
+                   code_quality_score, dev_hygiene_score, rating, total_findings,
+                   report_json
+            FROM audits
+        """
+        clauses = []
+        params: List[Any] = []
         if repo_path:
-            rows = conn.execute(
-                """SELECT id, repo_path, started_at, completed_at, status, is_incremental,
-                          overall_score, security_risk_score, impl_completeness_score,
-                          code_quality_score, dev_hygiene_score, rating, total_findings
-                   FROM audits WHERE repo_path=? ORDER BY started_at DESC LIMIT ?""",
-                (repo_path, limit),
+            clauses.append("repo_path LIKE ?")
+            params.append(f"%{repo_path}%")
+        if status:
+            clauses.append("status = ?")
+            params.append(status)
+
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+
+        direction = "DESC" if sort_desc else "ASC"
+        query += f" ORDER BY started_at {direction} LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        rows = conn.execute(query, tuple(params)).fetchall()
+
+        results = []
+        for r in rows:
+            d = dict(r)
+            aid = d["id"]
+            d["audit_id"] = aid
+            d["created_at"] = d.get("started_at")
+            d["incremental"] = bool(d.get("is_incremental", 0))
+            d["implementation_completeness_score"] = d.get("impl_completeness_score")
+            d["development_hygiene_score"] = d.get("dev_hygiene_score")
+            rp = d.get("repo_path", "")
+            d["repo_name"] = Path(rp).name if rp else "Unknown"
+
+            # Aggregate severity distribution for fast rendering in history table
+            sev_rows = conn.execute(
+                "SELECT severity, COUNT(*) as c FROM findings WHERE audit_id=? GROUP BY severity",
+                (aid,),
             ).fetchall()
-        else:
-            rows = conn.execute(
-                """SELECT id, repo_path, started_at, completed_at, status, is_incremental,
-                          overall_score, security_risk_score, impl_completeness_score,
-                          code_quality_score, dev_hygiene_score, rating, total_findings
-                   FROM audits ORDER BY started_at DESC LIMIT ?""",
-                (limit,),
-            ).fetchall()
-        return [dict(r) for r in rows]
+            sev_map = {sr["severity"].lower(): sr["c"] for sr in sev_rows}
+            d["critical_count"] = sev_map.get("critical", 0)
+            d["high_count"] = sev_map.get("high", 0)
+            d["medium_count"] = sev_map.get("medium", 0)
+            d["low_count"] = sev_map.get("low", 0)
+            d["info_count"] = sev_map.get("info", 0)
+
+            # Exclude large report_json from summary list to keep responses fast
+            d.pop("report_json", None)
+            results.append(d)
+
+        return results
     finally:
         conn.close()

@@ -61,14 +61,18 @@ class AuditPipeline:
         self.gap_engine = CodingGapEngine()
         self.loose_end_engine = LooseEndEngine()
 
-    def run(self, prev_findings: Optional[List[Finding]] = None) -> AuditReport:
+    def run(
+        self,
+        prev_findings: Optional[List[Finding]] = None,
+        audit_id: Optional[str] = None,
+    ) -> AuditReport:
         """
         Execute the full 14-stage audit pipeline.
         If prev_findings is supplied, lifecycle states (NEW/EXISTING/RESOLVED/REINTRODUCED)
         are computed by comparing against the previous audit's findings.
         """
         start_time = time.time()
-        audit_id = str(uuid.uuid4())
+        audit_id = audit_id or getattr(self.context, "audit_id", None) or str(uuid.uuid4())
 
         # Step 1, 2, 3: Repository discovery, Technology ID, and File classification
         scanner = RepositoryScanner(self.context)

@@ -90,11 +90,17 @@ class IncrementalAuditEngine:
     - File hashes are persisted so future audits can detect changes.
     """
 
-    def __init__(self, context: AuditContext, db_path=DB_PATH):
+    def __init__(
+        self,
+        context: AuditContext,
+        db_path=DB_PATH,
+        audit_id: Optional[str] = None,
+    ):
         self.context = context
         self.db_path = db_path
+        self.audit_id = audit_id or getattr(context, "audit_id", None)
 
-    def run(self) -> AuditReport:
+    def run(self, audit_id: Optional[str] = None) -> AuditReport:
         # Always run a full audit — incremental refers to lifecycle tracking, not analysis scope
         pipeline = AuditPipeline(self.context)
 
@@ -118,7 +124,8 @@ class IncrementalAuditEngine:
             modified, added, deleted = set(), set(), set()
 
         # Run full audit with lifecycle comparison
-        report = pipeline.run(prev_findings=prev_findings)
+        effective_audit_id = audit_id or self.audit_id
+        report = pipeline.run(prev_findings=prev_findings, audit_id=effective_audit_id)
         self.graph = getattr(pipeline, "graph", None)
 
         # Persist results
