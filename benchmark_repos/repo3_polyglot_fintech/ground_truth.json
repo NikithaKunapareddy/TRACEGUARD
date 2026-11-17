@@ -1,0 +1,11 @@
+{
+  "known_defects": [
+    {"category": "security", "subcategory": "secret_exposure", "description": "Hardcoded JWT secret in auth.js"},
+    {"category": "gap", "subcategory": "undelivered_specification", "description": "Documented POST /api/v1/transfers/wire missing from code"},
+    {"category": "slop", "subcategory": "swallowed_exception", "description": "Empty catch block in routes.js"}
+  ],
+  "traps_to_reject": [
+    {"description": "Valid parameterized query in auth.js using pool.query"},
+    {"description": "Documented API endpoints matching actual routes"}
+  ]
+}

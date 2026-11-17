@@ -1,8 +1,7 @@
 {
   "known_defects": [
-    {"category": "loose_end", "subcategory": "unconfigured_env_var", "description": "CELERY_BROKER_URL is used but not configured"},
-    {"category": "slop", "subcategory": "empty_exception_handler", "description": "Silent exception swallowing in process_email_batch"},
-    {"category": "security", "subcategory": "injection", "description": "SQL injection in process_payment_settlement"}
+    {"category": "loose_end", "subcategory": "unconfigured_env_var", "description": "CELERY_BROKER_URL accessed via os.getenv without configuration"},
+    {"category": "slop", "subcategory": "swallowed_exception", "description": "Broad exception silently swallowed in process_email_batch"}
   ],
   "traps_to_reject": []
 }

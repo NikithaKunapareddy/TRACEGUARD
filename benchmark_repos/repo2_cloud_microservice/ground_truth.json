@@ -1,0 +1,14 @@
+{
+  "known_defects": [
+    {"category": "security", "subcategory": "injection", "description": "Command injection in backup_tool.py"},
+    {"category": "gap", "subcategory": "unimplemented_interface", "description": "Unimplemented StorageBackend interface in storage.go"},
+    {"category": "slop", "subcategory": "excessive_complexity", "description": "Excessive nesting depth in cleanup.py"},
+    {"category": "loose_end", "subcategory": "unconfigured_env_var", "description": "Unconfigured METRICS_COLLECTOR_URL in config.py"},
+    {"category": "loose_end", "subcategory": "commented_out_code", "description": "Commented-out implementation block in backup_tool.py"}
+  ],
+  "traps_to_reject": [
+    {"description": "Safe subprocess.run list call in cleanup.py"},
+    {"description": "MetricsProvider implemented by PrometheusMetrics"},
+    {"description": "Declared DB_HOST and DB_PORT"}
+  ]
+}

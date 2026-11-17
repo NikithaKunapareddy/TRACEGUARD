@@ -1,10 +1,10 @@
 {
   "known_defects": [
-    {"category": "security", "subcategory": "hardcoded_secret", "description": "JWT_SECRET is hardcoded in server.js"},
-    {"category": "slop", "subcategory": "empty_catch", "description": "catch block in /data handler is empty"},
-    {"category": "loose_end", "subcategory": "commented_out_code", "description": "Admin delete endpoint commented out without explanation or TODO"}
+    {"category": "security", "subcategory": "secret_exposure", "description": "JWT_SECRET hardcoded in application source code"},
+    {"category": "security", "subcategory": "broken_access_control", "description": "Missing authentication checks on login route"},
+    {"category": "loose_end", "subcategory": "debug_artifact", "description": "console.log debug statement in server listen"}
   ],
   "traps_to_reject": [
-    {"description": "express.json() middleware is safe, should not be flagged"}
+    {"description": "express.json() middleware is safe and should not be flagged"}
   ]
 }

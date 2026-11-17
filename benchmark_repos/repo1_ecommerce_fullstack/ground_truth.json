@@ -1,0 +1,19 @@
+{
+  "known_defects": [
+    {"category": "security", "subcategory": "injection", "description": "SQL injection in search.py"},
+    {"category": "security", "subcategory": "broken_access_control", "description": "Unprotected admin endpoint in admin.py"},
+    {"category": "gap", "subcategory": "missing_backend_route", "description": "Missing backend route for /api/v2/discounts/apply"},
+    {"category": "gap", "subcategory": "placeholder_endpoint", "description": "API Endpoint returns placeholder mock in checkout.py"},
+    {"category": "slop", "subcategory": "swallowed_exception", "description": "Blind exception suppression in helpers.py"},
+    {"category": "slop", "subcategory": "unreachable_code", "description": "Unreachable code in helpers.py"},
+    {"category": "slop", "subcategory": "redundant_wrapper", "description": "Redundant pass-through wrapper in helpers.py"},
+    {"category": "loose_end", "subcategory": "unresolved_task", "description": "Actionable TODO in billing.py"},
+    {"category": "loose_end", "subcategory": "debug_artifact", "description": "Debug print statement in billing.py"}
+  ],
+  "traps_to_reject": [
+    {"description": "Parameterized query in items.py"},
+    {"description": "Client call matching /api/items/{id}"},
+    {"description": "External call to api.stripe.com"},
+    {"description": "Documentation comment with 'todo list'"}
+  ]
+}

@@ -1,8 +1,6 @@
 {
   "known_defects": [
-    {"category": "security", "subcategory": "hardcoded_secret", "description": "APP_SECRET in core/security.py"},
-    {"category": "slop", "subcategory": "duplicate_implementation", "description": "calculate_order_total and compute_invoice_sum are identical"},
-    {"category": "slop", "subcategory": "placeholder_implementation", "description": "cancel_order is empty pass"}
+    {"category": "slop", "subcategory": "placeholder_implementation", "description": "cancel_order is empty pass statement"}
   ],
   "traps_to_reject": []
 }
