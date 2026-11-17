@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
 from ..core.context import AuditConfig, AuditContext
@@ -39,16 +41,42 @@ app = FastAPI(
         "Shares the same analysis engine with the CLI."
     ),
     version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    """Redirect root to Swagger UI documentation."""
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/api/docs", include_in_schema=False)
+def api_docs_alias():
+    """Support both /docs and /api/docs."""
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/api/redoc", include_in_schema=False)
+def api_redoc_alias():
+    """Support both /redoc and /api/redoc."""
+    return RedirectResponse(url="/redoc")
+
+
+# Mount static React dashboard if built
+_frontend_build = Path(__file__).resolve().parent.parent.parent / "frontend" / "build"
+if _frontend_build.exists() and (_frontend_build / "index.html").exists():
+    if (_frontend_build / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(_frontend_build / "assets")), name="assets")
+    app.mount("/dashboard", StaticFiles(directory=str(_frontend_build), html=True), name="dashboard")
 
 # In-process audit state store: audit_id -> status dict
 _audit_store: Dict[str, Dict[str, Any]] = {}

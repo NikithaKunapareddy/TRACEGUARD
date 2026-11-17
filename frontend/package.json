@@ -2,7 +2,14 @@
   "name": "traceguard-ui",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "TraceGuard Architecture-Agnostic Repository Integrity Agent Web UI",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -10,10 +17,8 @@
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "typescript": "^5.0.0"
-  },
-  "scripts": {
-    "start": "echo 'Run backend at http://localhost:8000 and serve frontend static build'",
-    "build": "tsc"
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.0.0",
+    "vite": "^5.1.0"
   }
 }

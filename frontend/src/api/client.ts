@@ -74,7 +74,25 @@ export interface PaginatedFindings {
   findings: Finding[];
 }
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const getBaseUrl = (): string => {
+  try {
+    if (typeof process !== "undefined" && process?.env?.REACT_APP_API_URL) {
+      return process.env.REACT_APP_API_URL;
+    }
+  } catch {
+    // Ignore in browser
+  }
+  if (typeof window !== "undefined" && window.location) {
+    if (window.location.port === "8000") {
+      return "";
+    }
+    const host = window.location.hostname || "127.0.0.1";
+    return `http://${host}:8000`;
+  }
+  return "http://127.0.0.1:8000";
+};
+
+const BASE_URL = getBaseUrl();
 
 export const traceguardApi = {
   async health(): Promise<{ status: string; service: string; version: string }> {
