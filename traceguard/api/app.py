@@ -53,9 +53,19 @@ app.add_middleware(
 )
 
 
+# Mount static React dashboard if built
+_frontend_build = Path(__file__).resolve().parent.parent.parent / "frontend" / "build"
+if _frontend_build.exists() and (_frontend_build / "index.html").exists():
+    if (_frontend_build / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(_frontend_build / "assets")), name="assets")
+    app.mount("/dashboard", StaticFiles(directory=str(_frontend_build), html=True), name="dashboard")
+
+
 @app.get("/", include_in_schema=False)
 def root():
-    """Redirect root to Swagger UI documentation."""
+    """Redirect root to UI dashboard if built, otherwise to Swagger docs."""
+    if _frontend_build.exists() and (_frontend_build / "index.html").exists():
+        return RedirectResponse(url="/dashboard/")
     return RedirectResponse(url="/docs")
 
 
@@ -69,14 +79,6 @@ def api_docs_alias():
 def api_redoc_alias():
     """Support both /redoc and /api/redoc."""
     return RedirectResponse(url="/redoc")
-
-
-# Mount static React dashboard if built
-_frontend_build = Path(__file__).resolve().parent.parent.parent / "frontend" / "build"
-if _frontend_build.exists() and (_frontend_build / "index.html").exists():
-    if (_frontend_build / "assets").exists():
-        app.mount("/assets", StaticFiles(directory=str(_frontend_build / "assets")), name="assets")
-    app.mount("/dashboard", StaticFiles(directory=str(_frontend_build), html=True), name="dashboard")
 
 # In-process audit state store: audit_id -> status dict
 _audit_store: Dict[str, Dict[str, Any]] = {}
