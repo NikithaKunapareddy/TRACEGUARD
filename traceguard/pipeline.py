@@ -109,16 +109,6 @@ class AuditPipeline:
             + raw_loose_findings
         )
 
-        # Apply category filter if configured
-        if self.context.config.categories_filter:
-            cats = set(self.context.config.categories_filter)
-            all_findings = [f for f in all_findings if f.category.value in cats]
-
-        # Apply severity filter if configured
-        if self.context.config.min_severity:
-            min_sev = Severity(self.context.config.min_severity.lower())
-            all_findings = [f for f in all_findings if f.severity.score >= min_sev.score]
-
         # Step 11: Cross-file evidence correlation
         correlator = CrossFileCorrelator(graph)
         correlated_findings = correlator.correlate(all_findings)
@@ -136,8 +126,20 @@ class AuditPipeline:
         if prev_findings:
             validated_findings = self._apply_lifecycle(validated_findings, prev_findings)
 
-        # Step 13: 4-dimensional risk assessment
+        # Step 13: 4-dimensional risk assessment computed on ALL validated findings.
+        # Repository integrity assessment represents the whole repository,
+        # ensuring the canonical score is identical regardless of presentation filters.
         assessment = self._calculate_assessment(validated_findings, overview)
+
+        # Apply presentation filters if configured
+        final_findings = validated_findings
+        if self.context.config.categories_filter:
+            cats = set(self.context.config.categories_filter)
+            final_findings = [f for f in final_findings if f.category.value in cats]
+
+        if self.context.config.min_severity:
+            min_sev = Severity(self.context.config.min_severity.lower())
+            final_findings = [f for f in final_findings if f.severity.score >= min_sev.score]
 
         # Graph coverage metrics
         graph_coverage = graph.get_coverage_metrics()
@@ -147,7 +149,7 @@ class AuditPipeline:
         return AuditReport(
             overview=overview,
             assessment=assessment,
-            findings=validated_findings,
+            findings=final_findings,
             graph_stats=graph.get_stats(),
             graph_coverage=graph_coverage,
             execution_time_seconds=exec_time,

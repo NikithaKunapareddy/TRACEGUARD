@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TraceGuard Audit Report - C:\Users\nikit\OneDrive\Desktop\myco\benchmark_repos\repo1_ecommerce_fullstack</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --critical: #f85149;
+      --high: #ff7b72;
+      --medium: #d29922;
+      --low: #388bfd;
+      --success: #3fb950;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .brand { font-size: 26px; font-weight: 800; color: #58a6ff; letter-spacing: -0.5px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-critical { background: rgba(248, 81, 73, 0.2); color: var(--critical); border: 1px solid var(--critical); }
+    .badge-high { background: rgba(255, 123, 114, 0.2); color: var(--high); border: 1px solid var(--high); }
+    .badge-medium { background: rgba(210, 153, 34, 0.2); color: var(--medium); border: 1px solid var(--medium); }
+    .badge-low { background: rgba(56, 139, 253, 0.2); color: var(--low); border: 1px solid var(--low); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card-title { font-size: 13px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+    .card-value { font-size: 28px; font-weight: 700; color: #fff; }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 260px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .filter-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .filter-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+    .finding-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .finding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .finding-title { font-size: 18px; font-weight: 700; color: #fff; }
+    .finding-meta { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+    .code-box {
+      background: #000;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 10px 0;
+      color: #7ee787;
+    }
+    .evidence-list { margin: 8px 0 12px 20px; font-size: 13px; color: var(--text-dim); }
+    .remediation {
+      background: rgba(63, 185, 80, 0.1);
+      border-left: 3px solid var(--success);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 12px;
+      border-radius: 0 4px 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="brand">TRACEGUARD</div>
+        <div style="font-size: 13px; color: var(--text-dim);">Architecture-Agnostic Repository Integrity Agent</div>
+      </div>
+      <div>
+        <span class="badge" style="background: rgba(88, 166, 255, 0.2); color: var(--accent); font-size: 14px;">
+          Score: 92.2 / 100 (EXCELLENT)
+        </span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Files Audited</div>
+        <div class="card-value">12</div>
+        <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">188 lines of code</div>
+      </div>
+      <div class="card">
+        <div class="card-title">ERCG Consistency Graph</div>
+        <div class="card-value">75</div>
+        <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">76 evidence relations</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Security & Gaps</div>
+        <div class="card-value" style="color: var(--critical);">4</div>
+        <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Critical & High priority issues</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Slop & Loose Ends</div>
+        <div class="card-value" style="color: var(--medium);">14</div>
+        <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Quality debt & unfinished work</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search findings by ID, title, file, or keyword...">
+      <button class="filter-btn active" data-filter="all">All (18)</button>
+      <button class="filter-btn" data-filter="security">Security</button>
+      <button class="filter-btn" data-filter="gap">Gaps</button>
+      <button class="filter-btn" data-filter="slop">Slop</button>
+      <button class="filter-btn" data-filter="loose_end">Loose Ends</button>
+    </div>
+
+    <div id="findingsContainer"></div>
+  </div>
+
+  <script>
+    const findings = [{"id": "TG-SEC-001", "category": "security", "subcategory": "injection", "title": "SQL Injection via Formatted String Query", "severity": "critical", "confidence": 70, "verification_status": "Probable", "affected_file": "backend/app/routers/search.py", "line_number": 11, "snippet": "cursor.execute(f\"SELECT * FROM products WHERE name LIKE '%{query}%'\")", "supporting_evidence": ["Direct match of dangerous injection sink at line 11", "Dynamic string interpolation inside query or execution sink"], "counterevidence_considered": ["Checked for parameterized query placeholders: not found or bypassed by f-string", "Checked for sanitization wrapper: none identified in sink expression", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Raw SQL query dynamically constructed using f-string interpolation rather than parameterized arguments.", "potential_impact": "Attacker can execute arbitrary database queries or shell commands, leading to total data exfiltration or host takeover.", "recommended_remediation": "Use parameterized queries (e.g. cursor.execute(query, (params,))) or pass subprocess arguments as a list with shell=False."}, {"id": "TG-SEC-002", "category": "security", "subcategory": "broken_access_control", "title": "Unprotected Sensitive Endpoint (DELETE /api/admin/users/{id})", "severity": "high", "confidence": 61, "verification_status": "Needs review", "affected_file": "backend/app/routers/admin.py", "line_number": 7, "snippet": "Endpoint: delete_user_account", "supporting_evidence": ["Endpoint handles sensitive operation (/api/admin/users/{id}) without local auth decorators or guards", "No GUARDS relation established in repository consistency graph"], "counterevidence_considered": ["Checked for route-level auth decorators: none found", "Checked for graph GUARDS relation: none found", "Checked if endpoint is read-only public info: path contains sensitive keywords", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Administrative or state-mutating endpoints exposed without identifiable authentication or authorization checks allow unauthenticated execution by any caller.", "potential_impact": "Privilege escalation, unauthorized data tampering, or destructive operations.", "recommended_remediation": "Add an authentication/authorization middleware or decorator (e.g. @require_auth, Depends(get_current_admin))."}, {"id": "TG-SLOP-001", "category": "slop", "subcategory": "swallowed_exception", "title": "Blind Exception Suppression (Exception)", "severity": "high", "confidence": 92, "verification_status": "Confirmed", "affected_file": "backend/app/utils/helpers.py", "line_number": 18, "snippet": "    except Exception:", "supporting_evidence": ["Exception block silently swallows Exception with 'pass' or empty handler", "Zero logging, re-raising, or recovery action executed"], "counterevidence_considered": ["Checked for error logging statements: none found in except body", "Checked for metric counters or fallback assignments: none found"], "technical_explanation": "Silently discarding exceptions without logging or structured recovery conceals runtime failures, database corruptions, and critical network drops, making production outages nearly impossible to diagnose.", "potential_impact": "Silent data corruption, unexplained downstream state failure, and extended debug time during production incidents.", "recommended_remediation": "Log the exception with traceback (logger.exception), re-raise a domain-specific error, or provide an explicit documented fallback."}, {"id": "TG-SLOP-002", "category": "slop", "subcategory": "unreachable_code", "title": "Unreachable Code After Return", "severity": "medium", "confidence": 95, "verification_status": "Confirmed", "affected_file": "backend/app/utils/helpers.py", "line_number": 11, "snippet": "audit_log = \"discount calculated\"", "supporting_evidence": ["Statement immediately follows unconditional Return at line 10", "Execution path can never reach this statement"], "counterevidence_considered": ["Checked whether return was inside conditional branch: verified top-level block sequence"], "technical_explanation": "Code placed immediately after an unconditional return or raise cannot ever execute, representing dead logic and clutter.", "potential_impact": "Dead code confuses engineers regarding actual control flow and creates dead weight in test suites.", "recommended_remediation": "Remove the unreachable code block or fix the premature return condition."}, {"id": "TG-SLOP-003", "category": "slop", "subcategory": "dead_function", "title": "Unreferenced Internal Function (_raw_fetch)", "severity": "low", "confidence": 85, "verification_status": "Probable", "affected_file": "backend/app/utils/helpers.py", "line_number": 1, "snippet": "def _raw_fetch(...)", "supporting_evidence": ["Private function '_raw_fetch' has 0 internal callers across the entire repository consistency graph", "Not referenced in any test or exported interface"], "counterevidence_considered": ["Checked for dynamic call via getattr/string reflection: no matches found", "Checked for external exports: function marked private with leading underscore"], "technical_explanation": "Internal private function declared but never invoked within the repository, indicating abandoned feature development or incomplete refactoring.", "potential_impact": "Code bloat, cognitive load for new developers, and maintenance burden.", "recommended_remediation": "Delete the unreferenced function or connect it to its intended caller."}, {"id": "TG-SLOP-004", "category": "slop", "subcategory": "redundant_abstraction", "title": "Redundant Pass-Through Wrapper (fetch_item_by_id -> _raw_fetch)", "severity": "low", "confidence": 88, "verification_status": "Confirmed", "affected_file": "backend/app/utils/helpers.py", "line_number": 5, "snippet": "def fetch_item_by_id(item_id: int):", "supporting_evidence": ["Function 'fetch_item_by_id' directly forwards arguments ['item_id'] to '_raw_fetch' without transformation or logic", "No decorators, logging, or caching attached"], "counterevidence_considered": ["Checked for parameter transformations: identical parameter sequence", "Checked for logging/auditing side effects: none present"], "technical_explanation": "Thin pass-through wrapper adds unnecessary layer of indirection without providing boundary separation, caching, or logging.", "potential_impact": "Increases stack depth, clutters call hierarchy, and obscures where actual business logic lives.", "recommended_remediation": "Inline the call directly or document why this indirection layer is required for interface compatibility."}, {"id": "TG-SLOP-005", "category": "slop", "subcategory": "unused_import", "title": "Unused Import Statement ('Depends')", "severity": "info", "confidence": 92, "verification_status": "Confirmed", "affected_file": "backend/app/main.py", "line_number": 1, "snippet": "from fastapi import FastAPI, Depends, HTTPException", "supporting_evidence": ["Import 'Depends' appears only on its declaration line 1", "Zero references found in file AST and lexical text"], "counterevidence_considered": ["Checked if file is an __init__.py package exporter: negative"], "technical_explanation": "Unused imports introduce phantom dependencies, slow startup time, and confuse static analysis tools.", "potential_impact": "Dead dependencies and clutter.", "recommended_remediation": "Remove the unused import statement."}, {"id": "TG-SLOP-007", "category": "slop", "subcategory": "unused_import", "title": "Unused Import Statement ('os')", "severity": "info", "confidence": 92, "verification_status": "Confirmed", "affected_file": "backend/app/main.py", "line_number": 3, "snippet": "import os", "supporting_evidence": ["Import 'os' appears only on its declaration line 3", "Zero references found in file AST and lexical text"], "counterevidence_considered": ["Checked if file is an __init__.py package exporter: negative"], "technical_explanation": "Unused imports introduce phantom dependencies, slow startup time, and confuse static analysis tools.", "potential_impact": "Dead dependencies and clutter.", "recommended_remediation": "Remove the unused import statement."}, {"id": "TG-GAP-001", "category": "gap", "subcategory": "missing_backend_route", "title": "Missing Backend Route for Client Call (GET /api/v2/discounts/apply)", "severity": "high", "confidence": 68, "verification_status": "Needs review", "affected_file": "frontend/src/api/client.ts", "line_number": 3, "snippet": "fetch: CALL GET /api/v2/discounts/apply", "supporting_evidence": ["Frontend client in 'frontend/src/api/client.ts' at line 3 initiates request to '/api/v2/discounts/apply'", "No matching route handler found among registered backend endpoints in the ERCG", "Cross-file call path verified from 1 caller(s) in: frontend/src/api/client.ts"], "counterevidence_considered": ["Searched exact and parameterized route paths ({id}, :id, <id>): 0 matches", "Checked for wildcard or catch-all routers (*, /api/*): none found", "Checked if target is an external service URL: verified as internal relative path", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "The frontend component requires backend endpoint '/api/v2/discounts/apply' (GET), but no matching route or controller is implemented anywhere in the repository. In production, this causes 404 Not Found errors when users trigger this action.", "potential_impact": "Broken user-facing functionality, failing client requests, and unhandled promise rejections in the UI.", "recommended_remediation": "Implement the backend route handler for 'GET /api/v2/discounts/apply' or update the frontend client URL if the route was renamed."}, {"id": "TG-GAP-002", "category": "gap", "subcategory": "placeholder_endpoint", "title": "API Endpoint Returns Mock / Placeholder Data (process_checkout)", "severity": "high", "confidence": 70, "verification_status": "Probable", "affected_file": "backend/app/routers/checkout.py", "line_number": 11, "snippet": "process_checkout: Returns mock data: {'status': 'ok', 'mock': True, 'transaction_id': 'dummy_tx_12345'}", "supporting_evidence": ["Live registered endpoint 'process_checkout' body is stubbed with Returns mock data: {'status': 'ok', 'mock': True, 'transaction_id': 'dummy_tx_12345'}", "Returns hardcoded mock dictionary or empty value instead of executing domain logic"], "counterevidence_considered": ["Checked if endpoint is inside a mock server or test fixture: verified active production router", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Endpoint 'process_checkout' is exposed to consumers but returns hardcoded stub data (Returns mock data: {'status': 'ok', 'mock': True, 'transaction_id': 'dummy_tx_12345'}). Real requests will never persist state or perform actual operations.", "potential_impact": "Deceptive API behavior, data loss (operations silently not performed), and broken end-to-end integration.", "recommended_remediation": "Connect the route handler to the underlying database service or background worker."}, {"id": "TG-LOOSE-001", "category": "loose_end", "subcategory": "unresolved_task", "title": "Unresolved TODO Marker: implement webhook signature verification with Stripe secret", "severity": "low", "confidence": 70, "verification_status": "Probable", "affected_file": "backend/app/services/billing.py", "line_number": 3, "snippet": "# TODO: implement webhook signature verification with Stripe secret", "supporting_evidence": ["Explicit developer marker 'TODO' found at line 3", "Action item: implement webhook signature verification with Stripe secret"], "counterevidence_considered": ["Checked if comment is a generic documentation note: verified actionable developer task", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "A 'TODO' marker indicates unfinished implementation, known defect, or deferred refactoring left in the production codebase.", "potential_impact": "Incomplete edge case handling, hidden technical debt, or latent functional bugs.", "recommended_remediation": "Address the task (implement webhook signature verification with Stripe secret) or track it in the project issue tracker before removing the comment."}, {"id": "TG-LOOSE-002", "category": "loose_end", "subcategory": "debug_artifact", "title": "Debug Print Statement in Application Code", "severity": "low", "confidence": 75, "verification_status": "Probable", "affected_file": "backend/app/services/billing.py", "line_number": 6, "snippet": "print(\"DEBUG: payment payload received\", payload)", "supporting_evidence": ["Debugging instruction detected at line 6 in non-test application file"], "counterevidence_considered": ["Checked if inside a CLI script where print is standard output: verified application component", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Ad-hoc print debugging rather than structured logging.", "potential_impact": "Log pollution, server stalls, or unintentional data exposure.", "recommended_remediation": "Remove the debug artifact and replace with structured logging (logger.debug)."}, {"id": "TG-LOOSE-003", "category": "loose_end", "subcategory": "missing_test_coverage", "title": "Untested API Route (GET /)", "severity": "low", "confidence": 80, "verification_status": "Probable", "affected_file": "backend/app/main.py", "line_number": 17, "snippet": "GET /", "supporting_evidence": ["Endpoint '/' defined in 'backend/app/main.py' at line 17", "Zero tests in the repository test suite invoke or reference this route"], "counterevidence_considered": ["Searched test files for route path and handler function: no matching tests identified"], "technical_explanation": "Route '/' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.", "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.", "recommended_remediation": "Add an automated test case exercising 'GET /' with valid and invalid inputs."}, {"id": "TG-LOOSE-004", "category": "loose_end", "subcategory": "missing_test_coverage", "title": "Untested API Route (DELETE /api/admin/users/{id})", "severity": "low", "confidence": 60, "verification_status": "Needs review", "affected_file": "backend/app/routers/admin.py", "line_number": 7, "snippet": "DELETE /api/admin/users/{id}", "supporting_evidence": ["Endpoint '/api/admin/users/{id}' defined in 'backend/app/routers/admin.py' at line 7", "Zero tests in the repository test suite invoke or reference this route"], "counterevidence_considered": ["Searched test files for route path and handler function: no matching tests identified", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Route '/api/admin/users/{id}' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.", "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.", "recommended_remediation": "Add an automated test case exercising 'DELETE /api/admin/users/{id}' with valid and invalid inputs."}, {"id": "TG-LOOSE-005", "category": "loose_end", "subcategory": "missing_test_coverage", "title": "Untested API Route (POST /api/checkout)", "severity": "low", "confidence": 60, "verification_status": "Needs review", "affected_file": "backend/app/routers/checkout.py", "line_number": 11, "snippet": "POST /api/checkout", "supporting_evidence": ["Endpoint '/api/checkout' defined in 'backend/app/routers/checkout.py' at line 11", "Zero tests in the repository test suite invoke or reference this route"], "counterevidence_considered": ["Searched test files for route path and handler function: no matching tests identified", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Route '/api/checkout' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.", "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.", "recommended_remediation": "Add an automated test case exercising 'POST /api/checkout' with valid and invalid inputs."}, {"id": "TG-LOOSE-006", "category": "loose_end", "subcategory": "missing_test_coverage", "title": "Untested API Route (GET /api/items/{id})", "severity": "low", "confidence": 60, "verification_status": "Needs review", "affected_file": "backend/app/routers/items.py", "line_number": 7, "snippet": "GET /api/items/{id}", "supporting_evidence": ["Endpoint '/api/items/{id}' defined in 'backend/app/routers/items.py' at line 7", "Zero tests in the repository test suite invoke or reference this route"], "counterevidence_considered": ["Searched test files for route path and handler function: no matching tests identified", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Route '/api/items/{id}' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.", "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.", "recommended_remediation": "Add an automated test case exercising 'GET /api/items/{id}' with valid and invalid inputs."}, {"id": "TG-LOOSE-007", "category": "loose_end", "subcategory": "missing_test_coverage", "title": "Untested API Route (GET /api/items)", "severity": "low", "confidence": 60, "verification_status": "Needs review", "affected_file": "backend/app/routers/items.py", "line_number": 17, "snippet": "GET /api/items", "supporting_evidence": ["Endpoint '/api/items' defined in 'backend/app/routers/items.py' at line 17", "Zero tests in the repository test suite invoke or reference this route"], "counterevidence_considered": ["Searched test files for route path and handler function: no matching tests identified", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Route '/api/items' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.", "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.", "recommended_remediation": "Add an automated test case exercising 'GET /api/items' with valid and invalid inputs."}, {"id": "TG-LOOSE-008", "category": "loose_end", "subcategory": "missing_test_coverage", "title": "Untested API Route (GET /api/search)", "severity": "low", "confidence": 60, "verification_status": "Needs review", "affected_file": "backend/app/routers/search.py", "line_number": 7, "snippet": "GET /api/search", "supporting_evidence": ["Endpoint '/api/search' defined in 'backend/app/routers/search.py' at line 7", "Zero tests in the repository test suite invoke or reference this route"], "counterevidence_considered": ["Searched test files for route path and handler function: no matching tests identified", "Code is located in an unreferenced module; reducing urgency from critical to review"], "technical_explanation": "Route '/api/search' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.", "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.", "recommended_remediation": "Add an automated test case exercising 'GET /api/search' with valid and invalid inputs."}];
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    function renderFindings() {
+      const container = document.getElementById('findingsContainer');
+      const filtered = findings.filter(f => {
+        const matchFilter = currentFilter === 'all' || f.category === currentFilter;
+        const text = (f.id + ' ' + f.title + ' ' + f.affected_file + ' ' + f.technical_explanation).toLowerCase();
+        const matchSearch = !searchQuery || text.includes(searchQuery.toLowerCase());
+        return matchFilter && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">No matching findings found.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(f => `
+        <div class="finding-card">
+          <div class="finding-header">
+            <div>
+              <span class="badge badge-${f.severity}">${f.severity.toUpperCase()}</span>
+              <span style="font-weight: 700; margin-left: 8px;">${f.id}</span>
+              <span style="color: var(--text-dim); font-size: 13px; margin-left: 8px;">[${f.verification_status}]</span>
+            </div>
+            <div style="font-size: 13px; color: var(--accent); font-weight: 600;">${f.confidence}% confidence</div>
+          </div>
+          <div class="finding-title">${f.title}</div>
+          <div class="finding-meta">📁 <code>${f.affected_file}:${f.line_number}</code> | Category: <strong>${f.category}</strong> (${f.subcategory})</div>
+          <p style="font-size: 14px; margin-bottom: 8px;">${f.technical_explanation}</p>
+          ${f.snippet ? `<pre class="code-box">${escapeHtml(f.snippet)}</pre>` : ''}
+          ${f.supporting_evidence && f.supporting_evidence.length ? `
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-dim); margin-top: 8px;">SUPPORTING EVIDENCE:</div>
+            <ul class="evidence-list">${f.supporting_evidence.map(e => `<li>${escapeHtml(e)}</li>`).join('')}</ul>
+          ` : ''}
+          <div class="remediation"><strong>💡 Recommended Remediation:</strong> ${escapeHtml(f.recommended_remediation)}</div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderFindings();
+      });
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderFindings();
+    });
+
+    renderFindings();
+  </script>
+</body>
+</html>

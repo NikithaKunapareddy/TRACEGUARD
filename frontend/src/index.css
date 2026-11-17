@@ -23,6 +23,48 @@
   --glow-purple: 0 0 20px rgba(168, 85, 247, 0.35);
 }
 
+/* ========= LIGHT THEME ========= */
+[data-theme="light"] {
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #e2e8f0;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(241, 245, 249, 0.95);
+  --border-card: rgba(0, 0, 0, 0.08);
+  --border-card-hover: rgba(14, 165, 233, 0.4);
+
+  --accent-cyan: #0284c7;
+  --accent-blue: #2563eb;
+  --accent-purple: #7c3aed;
+  --accent-emerald: #059669;
+  --accent-rose: #dc2626;
+  --accent-amber: #d97706;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --glow-cyan: 0 0 20px rgba(2, 132, 199, 0.2);
+  --glow-rose: 0 0 20px rgba(220, 38, 38, 0.2);
+  --glow-emerald: 0 0 20px rgba(5, 150, 105, 0.2);
+  --glow-purple: 0 0 20px rgba(124, 58, 237, 0.2);
+}
+
+[data-theme="light"] body {
+  background-color: #f0f4f8;
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 85% 25%, rgba(124, 58, 237, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(5, 150, 105, 0.05) 0%, transparent 50%),
+    linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  color: #0f172a;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track { background: #e2e8f0; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
 * {
   box-sizing: border-box;
 }
@@ -35,7 +77,7 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 85% 25%, rgba(168, 85, 247, 0.06) 0%, transparent 40%),
     radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
@@ -44,7 +86,9 @@ body {
   background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
 }
 
-code, pre, .font-mono {
+code,
+pre,
+.font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -84,22 +128,45 @@ code, pre, .font-mono {
 
 /* Keyframe animations */
 @keyframes pulse-slow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
 }
 
 @keyframes radar-sweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(1000%); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(1000%);
+  }
 }
 
 .radar-sweep {
   animation: radar-sweep 4s linear infinite;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 .pulse-slow {

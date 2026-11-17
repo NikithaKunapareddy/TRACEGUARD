@@ -28,6 +28,7 @@ from ..storage.db import (
     get_audit_findings_rows,
     get_connection,
     get_latest_audit_id,
+    list_audits,
 )
 
 # ---------------------------------------------------------------------------
@@ -226,6 +227,62 @@ async def create_audit(
         repo_path=request.repo_path,
         message=f"Audit queued. Poll GET /api/v1/audits/{audit_id} for status.",
     )
+
+
+@app.get("/api/v1/audits")
+def get_historical_audits(
+    repo_path: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+) -> List[Dict[str, Any]]:
+    """List historical audits from SQLite persistence."""
+    return list_audits(repo_path=repo_path, limit=limit, db_path=DB_PATH)
+
+
+@app.get("/api/v1/audits/{audit_id_1}/compare/{audit_id_2}")
+def compare_two_audits(audit_id_1: str, audit_id_2: str) -> Dict[str, Any]:
+    """Compare two audit runs for finding lifecycle transitions and score delta."""
+    conn = get_connection(DB_PATH)
+    try:
+        a1 = conn.execute("SELECT * FROM audits WHERE id=?", (audit_id_1,)).fetchone()
+        a2 = conn.execute("SELECT * FROM audits WHERE id=?", (audit_id_2,)).fetchone()
+        if not a1 or not a2:
+            raise HTTPException(status_code=404, detail="One or both audits not found.")
+
+        f1 = conn.execute(
+            "SELECT stable_id, severity, category, title, lifecycle_state FROM findings WHERE audit_id=?",
+            (audit_id_1,),
+        ).fetchall()
+        f2 = conn.execute(
+            "SELECT stable_id, severity, category, title, lifecycle_state FROM findings WHERE audit_id=?",
+            (audit_id_2,),
+        ).fetchall()
+
+        f1_map = {r["stable_id"]: dict(r) for r in f1 if r["stable_id"]}
+        f2_map = {r["stable_id"]: dict(r) for r in f2 if r["stable_id"]}
+
+        resolved_ids = set(f1_map.keys()) - set(f2_map.keys())
+        new_ids = set(f2_map.keys()) - set(f1_map.keys())
+        persistent_ids = set(f1_map.keys()) & set(f2_map.keys())
+
+        score_1 = a1["overall_score"] if a1["overall_score"] is not None else 100.0
+        score_2 = a2["overall_score"] if a2["overall_score"] is not None else 100.0
+
+        return {
+            "previous_audit_id": audit_id_1,
+            "current_audit_id": audit_id_2,
+            "score_previous": score_1,
+            "score_current": score_2,
+            "score_delta": round(score_2 - score_1, 2),
+            "total_previous": len(f1),
+            "total_current": len(f2),
+            "resolved_count": len(resolved_ids),
+            "new_count": len(new_ids),
+            "persistent_count": len(persistent_ids),
+            "resolved_findings": [f1_map[sid] for sid in resolved_ids],
+            "new_findings": [f2_map[sid] for sid in new_ids],
+        }
+    finally:
+        conn.close()
 
 
 @app.get("/api/v1/audits/{audit_id}")

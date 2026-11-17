@@ -201,3 +201,30 @@ def get_file_hashes(audit_id: str, db_path: Path = DB_PATH) -> Dict[str, str]:
         return {r["relative_path"]: r["content_hash"] for r in rows}
     finally:
         conn.close()
+
+
+def list_audits(
+    repo_path: Optional[str] = None, limit: int = 50, db_path: Path = DB_PATH
+) -> List[Dict[str, Any]]:
+    """Return historical audits, ordered by started_at DESC."""
+    conn = get_connection(db_path)
+    try:
+        if repo_path:
+            rows = conn.execute(
+                """SELECT id, repo_path, started_at, completed_at, status, is_incremental,
+                          overall_score, security_risk_score, impl_completeness_score,
+                          code_quality_score, dev_hygiene_score, rating, total_findings
+                   FROM audits WHERE repo_path=? ORDER BY started_at DESC LIMIT ?""",
+                (repo_path, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT id, repo_path, started_at, completed_at, status, is_incremental,
+                          overall_score, security_risk_score, impl_completeness_score,
+                          code_quality_score, dev_hygiene_score, rating, total_findings
+                   FROM audits ORDER BY started_at DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()

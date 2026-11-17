@@ -66,6 +66,27 @@ export interface AuditStatus {
   error?: string;
 }
 
+export interface AuditHistoryItem {
+  audit_id: string;
+  repo_path: string;
+  status: string;
+  overall_score?: number;
+  rating?: string;
+  total_findings?: number;
+  incremental?: boolean;
+  created_at?: string;
+  completed_at?: string;
+}
+
+export interface AuditCompareResult {
+  audit_id_1: string;
+  audit_id_2: string;
+  score_delta: number;
+  new_findings: Finding[];
+  resolved_findings: Finding[];
+  persisting_findings: Finding[];
+}
+
 export interface PaginatedFindings {
   audit_id: string;
   total: number;
@@ -159,6 +180,22 @@ export const traceguardApi = {
   }> {
     const res = await fetch(`${BASE_URL}/api/v1/audits/${encodeURIComponent(auditId)}/graph`);
     if (!res.ok) throw new Error(`Failed to fetch graph: ${res.statusText}`);
+    return res.json();
+  },
+
+  async listAudits(repoPath?: string, limit = 20): Promise<AuditHistoryItem[]> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (repoPath) params.set("repo_path", repoPath);
+    const res = await fetch(`${BASE_URL}/api/v1/audits?${params}`);
+    if (!res.ok) throw new Error(`Failed to list audits: ${res.statusText}`);
+    return res.json();
+  },
+
+  async compareAudits(id1: string, id2: string): Promise<AuditCompareResult> {
+    const res = await fetch(
+      `${BASE_URL}/api/v1/audits/${encodeURIComponent(id1)}/compare/${encodeURIComponent(id2)}`
+    );
+    if (!res.ok) throw new Error(`Failed to compare audits: ${res.statusText}`);
     return res.json();
   },
 };

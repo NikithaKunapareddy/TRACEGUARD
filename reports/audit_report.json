@@ -1,0 +1,655 @@
+{
+  "overview": {
+    "root_path": "C:\\Users\\nikit\\OneDrive\\Desktop\\myco\\benchmark_repos\\repo1_ecommerce_fullstack",
+    "total_files": 12,
+    "total_lines": 188,
+    "languages": {
+      "json": 1,
+      "markdown": 1,
+      "python": 9,
+      "typescript": 1
+    },
+    "file_role_counts": {
+      "unknown": 1,
+      "doc": 1,
+      "migration": 1,
+      "backend": 8,
+      "model": 1
+    },
+    "detected_frameworks": [
+      "FastAPI",
+      "Pydantic",
+      "SQLAlchemy"
+    ]
+  },
+  "assessment": {
+    "overall_score": 92.22,
+    "rating": "EXCELLENT",
+    "security_risk_score": 90.91,
+    "implementation_completeness_score": 94.67,
+    "code_quality_score": 88.68,
+    "development_hygiene_score": 97.22,
+    "dimension_scores": {
+      "security_risk": 90.91,
+      "implementation_completeness": 94.67,
+      "code_quality": 88.68,
+      "development_hygiene": 97.22
+    },
+    "scoring_weights": {
+      "security": 0.4,
+      "completeness": 0.3,
+      "quality": 0.2,
+      "hygiene": 0.1
+    },
+    "evidence_sufficiency": "ADEQUATE",
+    "disclaimer": "DISCLAIMER: This score is a heuristic engineering quality estimate based on static analysis. It is NOT a security certification, penetration test, or compliance audit. Human expert review is required before making security or deployment decisions.",
+    "findings_by_category": {
+      "security": 2,
+      "slop": 6,
+      "gap": 2,
+      "loose_end": 8
+    },
+    "findings_by_severity": {
+      "critical": 1,
+      "high": 4,
+      "medium": 1,
+      "low": 10,
+      "info": 2
+    },
+    "findings_by_status": {
+      "Probable": 6,
+      "Needs review": 7,
+      "Confirmed": 5
+    },
+    "findings_by_lifecycle": {
+      "NEW": 18
+    },
+    "summary_verdict": "Repository exhibits strong architectural integrity with minimal defects."
+  },
+  "findings": [
+    {
+      "id": "TG-SEC-001",
+      "stable_id": "TG-SEC-84ac87e3de4e",
+      "category": "security",
+      "subcategory": "injection",
+      "title": "SQL Injection via Formatted String Query",
+      "severity": "critical",
+      "confidence": 0.7,
+      "verification_status": "Probable",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/search.py",
+      "line_number": 11,
+      "end_line_number": null,
+      "snippet": "cursor.execute(f\"SELECT * FROM products WHERE name LIKE '%{query}%'\")",
+      "supporting_evidence": [
+        "Direct match of dangerous injection sink at line 11",
+        "Dynamic string interpolation inside query or execution sink"
+      ],
+      "counterevidence_considered": [
+        "Checked for parameterized query placeholders: not found or bypassed by f-string",
+        "Checked for sanitization wrapper: none identified in sink expression",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Raw SQL query dynamically constructed using f-string interpolation rather than parameterized arguments.",
+      "potential_impact": "Attacker can execute arbitrary database queries or shell commands, leading to total data exfiltration or host takeover.",
+      "recommended_remediation": "Use parameterized queries (e.g. cursor.execute(query, (params,))) or pass subprocess arguments as a list with shell=False.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SEC-002",
+      "stable_id": "TG-SEC-55e3bca5ada5",
+      "category": "security",
+      "subcategory": "broken_access_control",
+      "title": "Unprotected Sensitive Endpoint (DELETE /api/admin/users/{id})",
+      "severity": "high",
+      "confidence": 0.6199999999999999,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/admin.py",
+      "line_number": 7,
+      "end_line_number": null,
+      "snippet": "Endpoint: delete_user_account",
+      "supporting_evidence": [
+        "Endpoint handles sensitive operation (/api/admin/users/{id}) without local auth decorators or guards",
+        "No GUARDS relation established in repository consistency graph"
+      ],
+      "counterevidence_considered": [
+        "Checked for route-level auth decorators: none found",
+        "Checked for graph GUARDS relation: none found",
+        "Checked if endpoint is read-only public info: path contains sensitive keywords",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Administrative or state-mutating endpoints exposed without identifiable authentication or authorization checks allow unauthenticated execution by any caller.",
+      "potential_impact": "Privilege escalation, unauthorized data tampering, or destructive operations.",
+      "recommended_remediation": "Add an authentication/authorization middleware or decorator (e.g. @require_auth, Depends(get_current_admin)).",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SLOP-001",
+      "stable_id": "TG-SLOP-b0fbbf214cb3",
+      "category": "slop",
+      "subcategory": "swallowed_exception",
+      "title": "Blind Exception Suppression (Exception)",
+      "severity": "high",
+      "confidence": 0.92,
+      "verification_status": "Confirmed",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/utils/helpers.py",
+      "line_number": 18,
+      "end_line_number": null,
+      "snippet": "    except Exception:",
+      "supporting_evidence": [
+        "Exception block silently swallows Exception with 'pass' or empty handler",
+        "Zero logging, re-raising, or recovery action executed"
+      ],
+      "counterevidence_considered": [
+        "Checked for error logging statements: none found in except body",
+        "Checked for metric counters or fallback assignments: none found"
+      ],
+      "technical_explanation": "Silently discarding exceptions without logging or structured recovery conceals runtime failures, database corruptions, and critical network drops, making production outages nearly impossible to diagnose.",
+      "potential_impact": "Silent data corruption, unexplained downstream state failure, and extended debug time during production incidents.",
+      "recommended_remediation": "Log the exception with traceback (logger.exception), re-raise a domain-specific error, or provide an explicit documented fallback.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SLOP-002",
+      "stable_id": "TG-SLOP-88b1397c90ce",
+      "category": "slop",
+      "subcategory": "unreachable_code",
+      "title": "Unreachable Code After Return",
+      "severity": "medium",
+      "confidence": 0.95,
+      "verification_status": "Confirmed",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/utils/helpers.py",
+      "line_number": 11,
+      "end_line_number": null,
+      "snippet": "audit_log = \"discount calculated\"",
+      "supporting_evidence": [
+        "Statement immediately follows unconditional Return at line 10",
+        "Execution path can never reach this statement"
+      ],
+      "counterevidence_considered": [
+        "Checked whether return was inside conditional branch: verified top-level block sequence"
+      ],
+      "technical_explanation": "Code placed immediately after an unconditional return or raise cannot ever execute, representing dead logic and clutter.",
+      "potential_impact": "Dead code confuses engineers regarding actual control flow and creates dead weight in test suites.",
+      "recommended_remediation": "Remove the unreachable code block or fix the premature return condition.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SLOP-003",
+      "stable_id": "TG-SLOP-1aa795564100",
+      "category": "slop",
+      "subcategory": "dead_function",
+      "title": "Unreferenced Internal Function (_raw_fetch)",
+      "severity": "low",
+      "confidence": 0.85,
+      "verification_status": "Probable",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/utils/helpers.py",
+      "line_number": 1,
+      "end_line_number": null,
+      "snippet": "def _raw_fetch(...)",
+      "supporting_evidence": [
+        "Private function '_raw_fetch' has 0 internal callers across the entire repository consistency graph",
+        "Not referenced in any test or exported interface"
+      ],
+      "counterevidence_considered": [
+        "Checked for dynamic call via getattr/string reflection: no matches found",
+        "Checked for external exports: function marked private with leading underscore"
+      ],
+      "technical_explanation": "Internal private function declared but never invoked within the repository, indicating abandoned feature development or incomplete refactoring.",
+      "potential_impact": "Code bloat, cognitive load for new developers, and maintenance burden.",
+      "recommended_remediation": "Delete the unreferenced function or connect it to its intended caller.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SLOP-004",
+      "stable_id": "TG-SLOP-e0af0c6bb2ce",
+      "category": "slop",
+      "subcategory": "redundant_abstraction",
+      "title": "Redundant Pass-Through Wrapper (fetch_item_by_id -> _raw_fetch)",
+      "severity": "low",
+      "confidence": 0.88,
+      "verification_status": "Confirmed",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/utils/helpers.py",
+      "line_number": 5,
+      "end_line_number": null,
+      "snippet": "def fetch_item_by_id(item_id: int):",
+      "supporting_evidence": [
+        "Function 'fetch_item_by_id' directly forwards arguments ['item_id'] to '_raw_fetch' without transformation or logic",
+        "No decorators, logging, or caching attached"
+      ],
+      "counterevidence_considered": [
+        "Checked for parameter transformations: identical parameter sequence",
+        "Checked for logging/auditing side effects: none present"
+      ],
+      "technical_explanation": "Thin pass-through wrapper adds unnecessary layer of indirection without providing boundary separation, caching, or logging.",
+      "potential_impact": "Increases stack depth, clutters call hierarchy, and obscures where actual business logic lives.",
+      "recommended_remediation": "Inline the call directly or document why this indirection layer is required for interface compatibility.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SLOP-005",
+      "stable_id": "TG-SLOP-525f902fff9b",
+      "category": "slop",
+      "subcategory": "unused_import",
+      "title": "Unused Import Statement ('Depends')",
+      "severity": "info",
+      "confidence": 0.92,
+      "verification_status": "Confirmed",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/main.py",
+      "line_number": 1,
+      "end_line_number": null,
+      "snippet": "from fastapi import FastAPI, Depends, HTTPException",
+      "supporting_evidence": [
+        "Import 'Depends' appears only on its declaration line 1",
+        "Zero references found in file AST and lexical text"
+      ],
+      "counterevidence_considered": [
+        "Checked if file is an __init__.py package exporter: negative"
+      ],
+      "technical_explanation": "Unused imports introduce phantom dependencies, slow startup time, and confuse static analysis tools.",
+      "potential_impact": "Dead dependencies and clutter.",
+      "recommended_remediation": "Remove the unused import statement.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-SLOP-007",
+      "stable_id": "TG-SLOP-561e59829126",
+      "category": "slop",
+      "subcategory": "unused_import",
+      "title": "Unused Import Statement ('os')",
+      "severity": "info",
+      "confidence": 0.92,
+      "verification_status": "Confirmed",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/main.py",
+      "line_number": 3,
+      "end_line_number": null,
+      "snippet": "import os",
+      "supporting_evidence": [
+        "Import 'os' appears only on its declaration line 3",
+        "Zero references found in file AST and lexical text"
+      ],
+      "counterevidence_considered": [
+        "Checked if file is an __init__.py package exporter: negative"
+      ],
+      "technical_explanation": "Unused imports introduce phantom dependencies, slow startup time, and confuse static analysis tools.",
+      "potential_impact": "Dead dependencies and clutter.",
+      "recommended_remediation": "Remove the unused import statement.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-GAP-001",
+      "stable_id": "TG-GAP-6c4a86d6ca68",
+      "category": "gap",
+      "subcategory": "missing_backend_route",
+      "title": "Missing Backend Route for Client Call (GET /api/v2/discounts/apply)",
+      "severity": "high",
+      "confidence": 0.6799999999999999,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "frontend/src/api/client.ts",
+      "line_number": 3,
+      "end_line_number": null,
+      "snippet": "fetch: CALL GET /api/v2/discounts/apply",
+      "supporting_evidence": [
+        "Frontend client in 'frontend/src/api/client.ts' at line 3 initiates request to '/api/v2/discounts/apply'",
+        "No matching route handler found among registered backend endpoints in the ERCG",
+        "Cross-file call path verified from 1 caller(s) in: frontend/src/api/client.ts"
+      ],
+      "counterevidence_considered": [
+        "Searched exact and parameterized route paths ({id}, :id, <id>): 0 matches",
+        "Checked for wildcard or catch-all routers (*, /api/*): none found",
+        "Checked if target is an external service URL: verified as internal relative path",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "The frontend component requires backend endpoint '/api/v2/discounts/apply' (GET), but no matching route or controller is implemented anywhere in the repository. In production, this causes 404 Not Found errors when users trigger this action.",
+      "potential_impact": "Broken user-facing functionality, failing client requests, and unhandled promise rejections in the UI.",
+      "recommended_remediation": "Implement the backend route handler for 'GET /api/v2/discounts/apply' or update the frontend client URL if the route was renamed.",
+      "related_nodes": [
+        "apicall:frontend/src/api/client.ts:GET:/api/v2/discounts/apply:3"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-GAP-002",
+      "stable_id": "TG-GAP-8328938e8fa6",
+      "category": "gap",
+      "subcategory": "placeholder_endpoint",
+      "title": "API Endpoint Returns Mock / Placeholder Data (process_checkout)",
+      "severity": "high",
+      "confidence": 0.7,
+      "verification_status": "Probable",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/checkout.py",
+      "line_number": 11,
+      "end_line_number": null,
+      "snippet": "process_checkout: Returns mock data: {'status': 'ok', 'mock': True, 'transaction_id': 'dummy_tx_12345'}",
+      "supporting_evidence": [
+        "Live registered endpoint 'process_checkout' body is stubbed with Returns mock data: {'status': 'ok', 'mock': True, 'transaction_id': 'dummy_tx_12345'}",
+        "Returns hardcoded mock dictionary or empty value instead of executing domain logic"
+      ],
+      "counterevidence_considered": [
+        "Checked if endpoint is inside a mock server or test fixture: verified active production router",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Endpoint 'process_checkout' is exposed to consumers but returns hardcoded stub data (Returns mock data: {'status': 'ok', 'mock': True, 'transaction_id': 'dummy_tx_12345'}). Real requests will never persist state or perform actual operations.",
+      "potential_impact": "Deceptive API behavior, data loss (operations silently not performed), and broken end-to-end integration.",
+      "recommended_remediation": "Connect the route handler to the underlying database service or background worker.",
+      "related_nodes": [
+        "fn:backend/app/routers/checkout.py:process_checkout:11"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-001",
+      "stable_id": "TG-LOOSE-c7cf561ed136",
+      "category": "loose_end",
+      "subcategory": "unresolved_task",
+      "title": "Unresolved TODO Marker: implement webhook signature verification with Stripe secret",
+      "severity": "low",
+      "confidence": 0.7,
+      "verification_status": "Probable",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/services/billing.py",
+      "line_number": 3,
+      "end_line_number": null,
+      "snippet": "# TODO: implement webhook signature verification with Stripe secret",
+      "supporting_evidence": [
+        "Explicit developer marker 'TODO' found at line 3",
+        "Action item: implement webhook signature verification with Stripe secret"
+      ],
+      "counterevidence_considered": [
+        "Checked if comment is a generic documentation note: verified actionable developer task",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "A 'TODO' marker indicates unfinished implementation, known defect, or deferred refactoring left in the production codebase.",
+      "potential_impact": "Incomplete edge case handling, hidden technical debt, or latent functional bugs.",
+      "recommended_remediation": "Address the task (implement webhook signature verification with Stripe secret) or track it in the project issue tracker before removing the comment.",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-002",
+      "stable_id": "TG-LOOSE-647e53a89798",
+      "category": "loose_end",
+      "subcategory": "debug_artifact",
+      "title": "Debug Print Statement in Application Code",
+      "severity": "low",
+      "confidence": 0.75,
+      "verification_status": "Probable",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/services/billing.py",
+      "line_number": 6,
+      "end_line_number": null,
+      "snippet": "print(\"DEBUG: payment payload received\", payload)",
+      "supporting_evidence": [
+        "Debugging instruction detected at line 6 in non-test application file"
+      ],
+      "counterevidence_considered": [
+        "Checked if inside a CLI script where print is standard output: verified application component",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Ad-hoc print debugging rather than structured logging.",
+      "potential_impact": "Log pollution, server stalls, or unintentional data exposure.",
+      "recommended_remediation": "Remove the debug artifact and replace with structured logging (logger.debug).",
+      "related_nodes": [],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-003",
+      "stable_id": "TG-LOOSE-a944cd512b9a",
+      "category": "loose_end",
+      "subcategory": "missing_test_coverage",
+      "title": "Untested API Route (GET /)",
+      "severity": "low",
+      "confidence": 0.8,
+      "verification_status": "Probable",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/main.py",
+      "line_number": 17,
+      "end_line_number": null,
+      "snippet": "GET /",
+      "supporting_evidence": [
+        "Endpoint '/' defined in 'backend/app/main.py' at line 17",
+        "Zero tests in the repository test suite invoke or reference this route"
+      ],
+      "counterevidence_considered": [
+        "Searched test files for route path and handler function: no matching tests identified"
+      ],
+      "technical_explanation": "Route '/' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.",
+      "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.",
+      "recommended_remediation": "Add an automated test case exercising 'GET /' with valid and invalid inputs.",
+      "related_nodes": [
+        "fn:backend/app/main.py:root:17"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-004",
+      "stable_id": "TG-LOOSE-dfd55d1245ba",
+      "category": "loose_end",
+      "subcategory": "missing_test_coverage",
+      "title": "Untested API Route (DELETE /api/admin/users/{id})",
+      "severity": "low",
+      "confidence": 0.6000000000000001,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/admin.py",
+      "line_number": 7,
+      "end_line_number": null,
+      "snippet": "DELETE /api/admin/users/{id}",
+      "supporting_evidence": [
+        "Endpoint '/api/admin/users/{id}' defined in 'backend/app/routers/admin.py' at line 7",
+        "Zero tests in the repository test suite invoke or reference this route"
+      ],
+      "counterevidence_considered": [
+        "Searched test files for route path and handler function: no matching tests identified",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Route '/api/admin/users/{id}' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.",
+      "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.",
+      "recommended_remediation": "Add an automated test case exercising 'DELETE /api/admin/users/{id}' with valid and invalid inputs.",
+      "related_nodes": [
+        "fn:backend/app/routers/admin.py:delete_user_account:7"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-005",
+      "stable_id": "TG-LOOSE-187d83a7bf13",
+      "category": "loose_end",
+      "subcategory": "missing_test_coverage",
+      "title": "Untested API Route (POST /api/checkout)",
+      "severity": "low",
+      "confidence": 0.6000000000000001,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/checkout.py",
+      "line_number": 11,
+      "end_line_number": null,
+      "snippet": "POST /api/checkout",
+      "supporting_evidence": [
+        "Endpoint '/api/checkout' defined in 'backend/app/routers/checkout.py' at line 11",
+        "Zero tests in the repository test suite invoke or reference this route"
+      ],
+      "counterevidence_considered": [
+        "Searched test files for route path and handler function: no matching tests identified",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Route '/api/checkout' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.",
+      "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.",
+      "recommended_remediation": "Add an automated test case exercising 'POST /api/checkout' with valid and invalid inputs.",
+      "related_nodes": [
+        "fn:backend/app/routers/checkout.py:process_checkout:11"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-006",
+      "stable_id": "TG-LOOSE-9a1ee05076e8",
+      "category": "loose_end",
+      "subcategory": "missing_test_coverage",
+      "title": "Untested API Route (GET /api/items/{id})",
+      "severity": "low",
+      "confidence": 0.6000000000000001,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/items.py",
+      "line_number": 7,
+      "end_line_number": null,
+      "snippet": "GET /api/items/{id}",
+      "supporting_evidence": [
+        "Endpoint '/api/items/{id}' defined in 'backend/app/routers/items.py' at line 7",
+        "Zero tests in the repository test suite invoke or reference this route"
+      ],
+      "counterevidence_considered": [
+        "Searched test files for route path and handler function: no matching tests identified",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Route '/api/items/{id}' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.",
+      "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.",
+      "recommended_remediation": "Add an automated test case exercising 'GET /api/items/{id}' with valid and invalid inputs.",
+      "related_nodes": [
+        "fn:backend/app/routers/items.py:get_item:7"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-007",
+      "stable_id": "TG-LOOSE-8ea3a9b82b3c",
+      "category": "loose_end",
+      "subcategory": "missing_test_coverage",
+      "title": "Untested API Route (GET /api/items)",
+      "severity": "low",
+      "confidence": 0.6000000000000001,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/items.py",
+      "line_number": 17,
+      "end_line_number": null,
+      "snippet": "GET /api/items",
+      "supporting_evidence": [
+        "Endpoint '/api/items' defined in 'backend/app/routers/items.py' at line 17",
+        "Zero tests in the repository test suite invoke or reference this route"
+      ],
+      "counterevidence_considered": [
+        "Searched test files for route path and handler function: no matching tests identified",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Route '/api/items' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.",
+      "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.",
+      "recommended_remediation": "Add an automated test case exercising 'GET /api/items' with valid and invalid inputs.",
+      "related_nodes": [
+        "fn:backend/app/routers/items.py:list_items:17"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    },
+    {
+      "id": "TG-LOOSE-008",
+      "stable_id": "TG-LOOSE-cb93b9fe83cc",
+      "category": "loose_end",
+      "subcategory": "missing_test_coverage",
+      "title": "Untested API Route (GET /api/search)",
+      "severity": "low",
+      "confidence": 0.6000000000000001,
+      "verification_status": "Needs review",
+      "lifecycle_state": "NEW",
+      "affected_file": "backend/app/routers/search.py",
+      "line_number": 7,
+      "end_line_number": null,
+      "snippet": "GET /api/search",
+      "supporting_evidence": [
+        "Endpoint '/api/search' defined in 'backend/app/routers/search.py' at line 7",
+        "Zero tests in the repository test suite invoke or reference this route"
+      ],
+      "counterevidence_considered": [
+        "Searched test files for route path and handler function: no matching tests identified",
+        "Code is located in an unreferenced module; reducing urgency from critical to review"
+      ],
+      "technical_explanation": "Route '/api/search' has no corresponding integration or unit test evidence, leaving regression risks unmonitored during future refactorings.",
+      "potential_impact": "Regressions and silent API breakage going unnoticed until production deployment.",
+      "recommended_remediation": "Add an automated test case exercising 'GET /api/search' with valid and invalid inputs.",
+      "related_nodes": [
+        "fn:backend/app/routers/search.py:search_products:7"
+      ],
+      "source_to_sink_trace": [],
+      "root_cause_id": null,
+      "code_url": null
+    }
+  ],
+  "graph_stats": {
+    "total_nodes": 75,
+    "total_edges": 76,
+    "endpoints": 6,
+    "api_calls": 2,
+    "db_models": 3,
+    "interfaces": 0,
+    "config_keys": 2,
+    "relations": 82
+  },
+  "graph_coverage": {
+    "total_relations": 82,
+    "resolved_relations": 82,
+    "inferred_relations": 0,
+    "unresolved_relations": 0,
+    "resolution_rate": 1.0,
+    "language_support": {
+      "python": "deep_ast",
+      "typescript": "ast_lexical",
+      "javascript": "ast_lexical",
+      "go": "tree_sitter_method_set",
+      "generic": "lexical_fallback"
+    }
+  },
+  "execution_time_seconds": 0.03513002395629883,
+  "audit_id": "4c47cb27-866a-42e6-8231-dd528fefeb6f",
+  "is_incremental": false
+}
