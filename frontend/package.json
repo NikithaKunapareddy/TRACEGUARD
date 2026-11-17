@@ -1,0 +1,19 @@
+{
+  "name": "traceguard-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TraceGuard Architecture-Agnostic Repository Integrity Agent Web UI",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "start": "echo 'Run backend at http://localhost:8000 and serve frontend static build'",
+    "build": "tsc"
+  }
+}
