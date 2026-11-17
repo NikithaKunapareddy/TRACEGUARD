@@ -3,6 +3,8 @@
  * Interfaces with the FastAPI REST API backend (POST /api/v1/audits, GET /api/v1/audits/{id}, etc.)
  */
 
+declare const process: any;
+
 export interface AuditRequest {
   repo_path: string;
   min_severity?: string;
