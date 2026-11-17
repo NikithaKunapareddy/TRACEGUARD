@@ -1,0 +1,11 @@
+{
+  "known_defects": [
+    {"category": "security", "subcategory": "injection", "description": "SQL injection in search_tasks via f-string"},
+    {"category": "security", "subcategory": "missing_auth", "description": "DELETE /admin/tasks/all has no authentication"},
+    {"category": "gap", "subcategory": "missing_route", "description": "Frontend calls DELETE /tasks/{id} but backend has no such route"}
+  ],
+  "traps_to_reject": [
+    {"description": "CORSMiddleware with wildcard is LOW/INFO not CRITICAL"},
+    {"description": "Safe parameterized INSERT in create_task must NOT be flagged"}
+  ]
+}

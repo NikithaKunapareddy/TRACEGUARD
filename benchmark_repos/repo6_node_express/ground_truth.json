@@ -1,0 +1,10 @@
+{
+  "known_defects": [
+    {"category": "security", "subcategory": "hardcoded_secret", "description": "JWT_SECRET is hardcoded in server.js"},
+    {"category": "slop", "subcategory": "empty_catch", "description": "catch block in /data handler is empty"},
+    {"category": "loose_end", "subcategory": "commented_out_code", "description": "Admin delete endpoint commented out without explanation or TODO"}
+  ],
+  "traps_to_reject": [
+    {"description": "express.json() middleware is safe, should not be flagged"}
+  ]
+}

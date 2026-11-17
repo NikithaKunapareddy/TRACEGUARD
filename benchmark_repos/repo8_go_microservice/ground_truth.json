@@ -1,0 +1,10 @@
+{
+  "known_defects": [
+    {"category": "gap", "subcategory": "unimplemented_interface", "description": "AuditNotifier interface is never implemented"},
+    {"category": "loose_end", "subcategory": "unconfigured_env_var", "description": "SERVICE_PORT is queried via os.Getenv but not in config"},
+    {"category": "loose_end", "subcategory": "commented_out_code", "description": "ListenAndServe is commented out"}
+  ],
+  "traps_to_reject": [
+    {"description": "CacheProvider is satisfied by RedisCache pointer methods and must NOT be flagged"}
+  ]
+}

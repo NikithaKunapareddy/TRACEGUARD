@@ -1,0 +1,8 @@
+{
+  "known_defects": [
+    {"category": "loose_end", "subcategory": "unconfigured_env_var", "description": "CELERY_BROKER_URL is used but not configured"},
+    {"category": "slop", "subcategory": "empty_exception_handler", "description": "Silent exception swallowing in process_email_batch"},
+    {"category": "security", "subcategory": "injection", "description": "SQL injection in process_payment_settlement"}
+  ],
+  "traps_to_reject": []
+}

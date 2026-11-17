@@ -1,0 +1,11 @@
+{
+  "known_defects": [
+    {"category": "slop", "subcategory": "placeholder_implementation", "description": "get_revenue returns None with TODO"},
+    {"category": "security", "subcategory": "hardcoded_secret", "description": "_INTERNAL_SECRET is hardcoded"},
+    {"category": "gap", "subcategory": "missing_documented_endpoint", "description": "README declares /analytics/users but no route exists"},
+    {"category": "security", "subcategory": "missing_auth", "description": "/admin/data has no auth"}
+  ],
+  "traps_to_reject": [
+    {"description": "get_sessions returning empty list is slop/incomplete, not a security issue"}
+  ]
+}
