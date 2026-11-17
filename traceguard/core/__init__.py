@@ -2,6 +2,8 @@ from .models import (
     Severity,
     Category,
     VerificationStatus,
+    LifecycleState,
+    EdgeResolution,
     NodeType,
     EdgeType,
     FileRole,
@@ -11,6 +13,7 @@ from .models import (
     Finding,
     FileMetadata,
     RepositoryOverview,
+    GraphCoverageMetrics,
     IntegrityAssessment,
     AuditReport,
 )
@@ -19,6 +22,8 @@ __all__ = [
     "Severity",
     "Category",
     "VerificationStatus",
+    "LifecycleState",
+    "EdgeResolution",
     "NodeType",
     "EdgeType",
     "FileRole",
@@ -28,6 +33,7 @@ __all__ = [
     "Finding",
     "FileMetadata",
     "RepositoryOverview",
+    "GraphCoverageMetrics",
     "IntegrityAssessment",
     "AuditReport",
 ]
