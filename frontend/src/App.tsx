@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { traceguardApi, AuditStatus, Finding } from "./api/client";
 import { CyberHeader } from "./components/CyberHeader";
 import { LandingHero } from "./components/LandingHero";
-import { AuditForm } from "./components/AuditForm";
+import { AuditWorkspace } from "./components/AuditWorkspace";
 import { OverviewDashboard } from "./components/OverviewDashboard";
 import { ConsistencyGraph3D, GraphNode, GraphEdge } from "./components/ConsistencyGraph3D";
 import { IntegrityScoreRadar } from "./components/IntegrityScoreRadar";
@@ -19,10 +19,12 @@ import {
   FileText,
   History,
   Loader2,
-  ChevronDown,
-  ChevronUp,
+  ArrowLeft,
+  PlusCircle,
+  FolderOpen,
 } from "lucide-react";
 
+type ViewState = "landing" | "workspace" | "dashboard" | "history";
 type TabKey = "overview" | "graph" | "score" | "findings" | "negspace" | "reports" | "history";
 
 export const App: React.FC = () => {
@@ -45,6 +47,9 @@ export const App: React.FC = () => {
 
   const handleToggleTheme = () => setDarkMode((d) => !d);
 
+  // App Navigation View
+  const [currentView, setCurrentView] = useState<ViewState>("landing");
+
   // Audit state
   const [currentAuditId, setCurrentAuditId] = useState<string | null>(null);
   const [auditStatus, setAuditStatus] = useState<AuditStatus | null>(null);
@@ -58,10 +63,7 @@ export const App: React.FC = () => {
   const [selectedRepo, setSelectedRepo] = useState<string>(
     "./benchmark_repos/repo1_ecommerce_fullstack"
   );
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
-  const [showLaunchForm, setShowLaunchForm] = useState<boolean>(true);
-
-  const formRef = useRef<HTMLDivElement>(null);
+  const [activeDashboardTab, setActiveDashboardTab] = useState<TabKey>("overview");
 
   // Health check and initial audits count
   useEffect(() => {
@@ -89,8 +91,8 @@ export const App: React.FC = () => {
           setPolling(false);
           if (res.status === "completed") {
             const fRes = await traceguardApi.getFindings(currentAuditId, 1, 150);
-            setFindings(fRes.findings);
-            setTotalFindings(fRes.total);
+            setFindings(fRes.findings || []);
+            setTotalFindings(fRes.total || (fRes.findings ? fRes.findings.length : 0));
 
             try {
               const gRes = await traceguardApi.getGraph(currentAuditId);
@@ -99,7 +101,8 @@ export const App: React.FC = () => {
             } catch (gErr) {
               console.warn("Could not load 3D graph data:", gErr);
             }
-            setActiveTab("overview");
+            setActiveDashboardTab("overview");
+            setCurrentView("dashboard");
           }
         }
       } catch (err) {
@@ -118,15 +121,6 @@ export const App: React.FC = () => {
     setGraphNodes([]);
     setGraphEdges([]);
     setPolling(true);
-    setActiveTab("overview");
-  };
-
-  const handleSelectPresetRepo = (path: string) => {
-    setSelectedRepo(path);
-  };
-
-  const handleSelectNode = (_nodeName: string) => {
-    setActiveTab("findings");
   };
 
   const handleLoadHistoricalAudit = async (
@@ -139,38 +133,37 @@ export const App: React.FC = () => {
       setAuditStatus(statusRes);
       if (statusRes.repo_path) setSelectedRepo(statusRes.repo_path);
 
-      // Fetch historical findings
+      // Fetch historical findings from SQLite
       const fRes = await traceguardApi.getFindings(auditId, 1, 150);
       setFindings(fRes.findings || []);
       setTotalFindings(fRes.total || (fRes.findings ? fRes.findings.length : 0));
 
-      // Fetch historical graph
+      // Fetch historical graph from SQLite
       try {
         const gRes = await traceguardApi.getGraph(auditId);
         if (gRes.nodes) setGraphNodes(gRes.nodes);
         if (gRes.edges) setGraphEdges(gRes.edges);
       } catch (gErr) {
-        console.warn("Graph load notice:", gErr);
+        console.warn("Historical graph load:", gErr);
       }
 
-      setActiveTab(jumpToTab);
+      setActiveDashboardTab(jumpToTab);
+      setCurrentView("dashboard");
     } catch (err: any) {
       alert(`Could not load historical audit: ${err.message}`);
     }
   };
 
-  const scrollToLaunchForm = () => {
-    setShowLaunchForm(true);
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-
   // Color tokens
   const cyan = darkMode ? "#38bdf8" : "#0284c7";
   const purple = darkMode ? "#a855f7" : "#7c3aed";
+  const emerald = darkMode ? "#10b981" : "#059669";
+  const rose = darkMode ? "#f43f5e" : "#dc2626";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textSecondary = darkMode ? "#94a3b8" : "#475569";
   const textMuted = darkMode ? "#64748b" : "#94a3b8";
   const cardBorder = darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
+  const cardBg = darkMode ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)";
 
   const tabs: Array<{ key: TabKey; label: string; icon: React.ElementType; badge?: number }> = [
     { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -182,224 +175,319 @@ export const App: React.FC = () => {
     { key: "history", label: "Audit History", icon: History },
   ];
 
+  const repoName = auditStatus?.repo_path
+    ? auditStatus.repo_path.split(/[/\\]/).pop()
+    : "Repository";
+
   return (
-    <div style={{ maxWidth: "1340px", margin: "0 auto", padding: "24px 20px" }}>
-      {/* Product Identity Header */}
+    <div style={{ maxWidth: "1340px", margin: "0 auto", padding: "20px 20px 40px 20px" }}>
+      {/* Universal Clean Header */}
       <CyberHeader
         serverHealth={serverHealth}
-        onSelectPresetRepo={handleSelectPresetRepo}
-        selectedRepo={selectedRepo}
         darkMode={darkMode}
         onToggleTheme={handleToggleTheme}
+        onNavigateLanding={() => setCurrentView("landing")}
+        onNavigateWorkspace={() => setCurrentView("workspace")}
+        onNavigateHistory={() => setCurrentView("history")}
+        currentView={currentView}
       />
 
-      {/* Landing Hero Screen (Shown as clean introductory banner) */}
-      <LandingHero
-        onStartAudit={scrollToLaunchForm}
-        onViewHistory={() => setActiveTab("history")}
-        onExploreCapabilities={() => setActiveTab("graph")}
-        darkMode={darkMode}
-        totalAuditsCount={totalAuditsCount}
-      />
+      {/* ======================================================== */}
+      {/* 1. PRODUCT LANDING PAGE VIEW                            */}
+      {/* ======================================================== */}
+      {currentView === "landing" && (
+        <LandingHero
+          onStartAudit={() => setCurrentView("workspace")}
+          onViewHistory={() => setCurrentView("history")}
+          onExploreCapabilities={() => setCurrentView("workspace")}
+          darkMode={darkMode}
+          totalAuditsCount={totalAuditsCount}
+        />
+      )}
 
-      {/* Audit Launch Section (Collapsible) */}
-      <div ref={formRef} style={{ marginBottom: "24px" }}>
-        <div
-          onClick={() => setShowLaunchForm((prev) => !prev)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            cursor: "pointer",
-            padding: "8px 4px",
-            marginBottom: "8px",
-          }}
-        >
-          <div style={{ fontSize: "13px", fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Audit Configuration &amp; Target Repository
-          </div>
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              background: "transparent",
-              border: "none",
-              color: cyan,
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {showLaunchForm ? (
-              <>
-                <span>Collapse Form</span>
-                <ChevronUp size={14} />
-              </>
-            ) : (
-              <>
-                <span>Configure New Audit</span>
-                <ChevronDown size={14} />
-              </>
-            )}
-          </button>
-        </div>
+      {/* ======================================================== */}
+      {/* 2. DEDICATED AUDIT WORKSPACE VIEW                       */}
+      {/* ======================================================== */}
+      {currentView === "workspace" && (
+        <>
+          {/* Scanning Progress Bar when running */}
+          {polling && auditStatus?.status === "running" && (
+            <div
+              style={{
+                background: `${cyan}18`,
+                border: `1px solid ${cyan}44`,
+                borderRadius: "14px",
+                padding: "16px 20px",
+                marginBottom: "24px",
+                display: "flex",
+                alignItems: "center",
+                gap: "14px",
+              }}
+            >
+              <Loader2
+                size={22}
+                color={cyan}
+                style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: "14px", color: cyan, marginBottom: "2px" }}>
+                  Analyzing AST, Extracting Symbols &amp; Traversing ERCG Consistency Graph…
+                </div>
+                <div style={{ fontSize: "12px", color: textMuted }}>
+                  Audit ID: {currentAuditId} • Target: {selectedRepo}
+                </div>
+              </div>
+            </div>
+          )}
 
-        {showLaunchForm && (
-          <AuditForm
+          <AuditWorkspace
+            onBackToLanding={() => setCurrentView("landing")}
             onAuditStarted={handleAuditStarted}
             repoPath={selectedRepo}
             setRepoPath={setSelectedRepo}
+            darkMode={darkMode}
+            isScanning={polling}
           />
-        )}
-      </div>
-
-      {/* Real-time Scanning Progress Bar */}
-      {polling && auditStatus?.status === "running" && (
-        <div
-          style={{
-            background: `${cyan}18`,
-            border: `1px solid ${cyan}44`,
-            borderRadius: "14px",
-            padding: "16px 20px",
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            gap: "14px",
-          }}
-        >
-          <Loader2
-            size={22}
-            color={cyan}
-            style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}
-          />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: "14px", color: cyan, marginBottom: "2px" }}>
-              Analyzing AST, Extracting Symbols &amp; Traversing ERCG Consistency Graph…
-            </div>
-            <div style={{ fontSize: "12px", color: textMuted }}>
-              Audit ID: {currentAuditId} • Target: {selectedRepo}
-            </div>
-          </div>
-        </div>
+        </>
       )}
 
-      {/* Main Dashboard Navigation Bar (7 Tabs) */}
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          borderBottom: `1px solid ${cardBorder}`,
-          paddingBottom: "12px",
-          marginBottom: "24px",
-          overflowX: "auto",
-        }}
-      >
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          const hasAudit = auditStatus && auditStatus.status === "completed";
-          const isResultTab = tab.key !== "history";
-          const isDisabled = isResultTab && !hasAudit;
+      {/* ======================================================== */}
+      {/* 3. DEDICATED AUDIT RESULTS DASHBOARD VIEW               */}
+      {/* ======================================================== */}
+      {currentView === "dashboard" && auditStatus && (
+        <div>
+          {/* Active Audit Context & Action Bar */}
+          <div
+            style={{
+              background: cardBg,
+              backdropFilter: "blur(16px)",
+              border: `1px solid ${cardBorder}`,
+              borderRadius: "16px",
+              padding: "16px 22px",
+              marginBottom: "20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "14px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <button
+                onClick={() => setCurrentView("workspace")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "7px 14px",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  background: `${cyan}15`,
+                  border: `1px solid ${cyan}33`,
+                  color: cyan,
+                  cursor: "pointer",
+                }}
+              >
+                <PlusCircle size={14} />
+                <span>New Audit</span>
+              </button>
 
-          return (
-            <button
-              key={tab.key}
-              disabled={isDisabled}
-              onClick={() => !isDisabled && setActiveTab(tab.key)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 16px",
-                borderRadius: "10px",
-                fontSize: "13px",
-                fontWeight: isActive ? 700 : 500,
-                background: isActive
-                  ? `${cyan}22`
-                  : darkMode
-                  ? "rgba(15, 23, 42, 0.5)"
-                  : "rgba(241, 245, 249, 0.6)",
-                border: isActive
-                  ? `1px solid ${cyan}66`
-                  : `1px solid ${cardBorder}`,
-                color: isActive ? cyan : isDisabled ? textMuted : darkMode ? "#94a3b8" : "#475569",
-                cursor: isDisabled ? "not-allowed" : "pointer",
-                opacity: isDisabled ? 0.45 : 1,
-                transition: "all 0.15s ease",
-                whiteSpace: "nowrap",
-              }}
-            >
-              <Icon size={16} color={isActive ? cyan : textMuted} />
-              <span>{tab.label}</span>
-              {tab.badge !== undefined && tab.badge > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <FolderOpen size={16} color={cyan} />
+                <span style={{ fontSize: "16px", fontWeight: 700, color: textPrimary }}>
+                  {repoName}
+                </span>
                 <span
                   style={{
-                    fontSize: "10px",
+                    fontSize: "11px",
                     fontWeight: 700,
-                    padding: "1px 6px",
+                    padding: "2px 8px",
                     borderRadius: "9999px",
-                    background: `${cyan}33`,
-                    color: cyan,
+                    background: `${emerald}20`,
+                    color: emerald,
+                    border: `1px solid ${emerald}40`,
                   }}
                 >
-                  {tab.badge}
+                  Score: {auditStatus.overall_score != null ? auditStatus.overall_score.toFixed(1) : "100.0"}/100
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              </div>
+            </div>
 
-      {/* Active Tab View */}
-      {activeTab === "overview" && auditStatus?.status === "completed" && (
-        <OverviewDashboard
-          status={auditStatus}
-          findings={findings}
-          onNavigateTab={setActiveTab}
-          darkMode={darkMode}
-        />
-      )}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "12px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
+                ID: {currentAuditId ? currentAuditId.slice(0, 16) : ""}…
+              </span>
+              <button
+                onClick={() => setCurrentView("history")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+                  border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+                  color: textSecondary,
+                  cursor: "pointer",
+                }}
+              >
+                <History size={13} color={purple} />
+                <span>All Audits</span>
+              </button>
+            </div>
+          </div>
 
-      {activeTab === "graph" && auditStatus?.status === "completed" && (
-        <div style={{ marginBottom: "28px" }}>
-          <ConsistencyGraph3D
-            nodes={graphNodes}
-            edges={graphEdges}
-            findings={findings}
-            onSelectNode={handleSelectNode}
-          />
+          {/* 7 Clean Navigation Tabs */}
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              borderBottom: `1px solid ${cardBorder}`,
+              paddingBottom: "12px",
+              marginBottom: "24px",
+              overflowX: "auto",
+            }}
+          >
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeDashboardTab === tab.key;
+
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveDashboardTab(tab.key)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: isActive ? 700 : 500,
+                    background: isActive
+                      ? `${cyan}22`
+                      : darkMode
+                      ? "rgba(15, 23, 42, 0.5)"
+                      : "rgba(241, 245, 249, 0.6)",
+                    border: isActive
+                      ? `1px solid ${cyan}66`
+                      : `1px solid ${cardBorder}`,
+                    color: isActive ? cyan : darkMode ? "#94a3b8" : "#475569",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Icon size={16} color={isActive ? cyan : textMuted} />
+                  <span>{tab.label}</span>
+                  {tab.badge !== undefined && tab.badge > 0 && (
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        padding: "1px 6px",
+                        borderRadius: "9999px",
+                        background: `${cyan}33`,
+                        color: cyan,
+                      }}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Tab View */}
+          {activeDashboardTab === "overview" && (
+            <OverviewDashboard
+              status={auditStatus}
+              findings={findings}
+              onNavigateTab={(tab) => setActiveDashboardTab(tab)}
+              darkMode={darkMode}
+            />
+          )}
+
+          {activeDashboardTab === "graph" && (
+            <div style={{ marginBottom: "28px" }}>
+              <ConsistencyGraph3D
+                nodes={graphNodes}
+                edges={graphEdges}
+                findings={findings}
+                onSelectNode={() => setActiveDashboardTab("findings")}
+              />
+            </div>
+          )}
+
+          {activeDashboardTab === "score" && (
+            <IntegrityScoreRadar status={auditStatus} />
+          )}
+
+          {activeDashboardTab === "findings" && (
+            <FindingsExplorer findings={findings} total={totalFindings} />
+          )}
+
+          {activeDashboardTab === "negspace" && (
+            <NegativeSpaceView findings={findings} />
+          )}
+
+          {activeDashboardTab === "reports" && currentAuditId && (
+            <ReportsExportView auditId={currentAuditId} />
+          )}
+
+          {activeDashboardTab === "history" && (
+            <AuditHistory
+              currentAuditId={currentAuditId}
+              onLoadAudit={handleLoadHistoricalAudit}
+              darkMode={darkMode}
+            />
+          )}
         </div>
       )}
 
-      {activeTab === "score" && auditStatus?.status === "completed" && (
-        <IntegrityScoreRadar status={auditStatus} />
-      )}
+      {/* ======================================================== */}
+      {/* 4. DEDICATED AUDIT HISTORY VIEW                         */}
+      {/* ======================================================== */}
+      {currentView === "history" && (
+        <div>
+          <div style={{ marginBottom: "16px" }}>
+            <button
+              onClick={() => setCurrentView(auditStatus ? "dashboard" : "landing")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 600,
+                background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+                border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+                color: textPrimary,
+                cursor: "pointer",
+              }}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to {auditStatus ? "Dashboard" : "Home"}</span>
+            </button>
+          </div>
 
-      {activeTab === "findings" && auditStatus?.status === "completed" && (
-        <FindingsExplorer findings={findings} total={totalFindings} />
-      )}
-
-      {activeTab === "negspace" && auditStatus?.status === "completed" && (
-        <NegativeSpaceView findings={findings} />
-      )}
-
-      {activeTab === "reports" && auditStatus?.status === "completed" && currentAuditId && (
-        <ReportsExportView auditId={currentAuditId} />
-      )}
-
-      {activeTab === "history" && (
-        <AuditHistory
-          currentAuditId={currentAuditId}
-          onLoadAudit={handleLoadHistoricalAudit}
-          darkMode={darkMode}
-        />
+          <AuditHistory
+            currentAuditId={currentAuditId}
+            onLoadAudit={handleLoadHistoricalAudit}
+            darkMode={darkMode}
+          />
+        </div>
       )}
 
       {/* Footer */}
       <footer
         style={{
-          marginTop: "48px",
+          marginTop: "54px",
           paddingTop: "20px",
           borderTop: `1px solid ${cardBorder}`,
           display: "flex",

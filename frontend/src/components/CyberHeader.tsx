@@ -1,127 +1,164 @@
 import React from "react";
-import { Shield, Sparkles, Sun, Moon } from "lucide-react";
+import { Shield, Sun, Moon, ArrowRight, History, Terminal } from "lucide-react";
 
 interface CyberHeaderProps {
   serverHealth: boolean | null;
-  onSelectPresetRepo: (path: string) => void;
-  selectedRepo: string;
   darkMode: boolean;
   onToggleTheme: () => void;
+  onNavigateLanding?: () => void;
+  onNavigateWorkspace?: () => void;
+  onNavigateHistory?: () => void;
+  currentView?: "landing" | "workspace" | "dashboard" | "history";
 }
 
 export const CyberHeader: React.FC<CyberHeaderProps> = ({
   serverHealth,
-  onSelectPresetRepo,
-  selectedRepo,
   darkMode,
   onToggleTheme,
+  onNavigateLanding,
+  onNavigateWorkspace,
+  onNavigateHistory,
+  currentView = "landing",
 }) => {
-  const presets = [
-    { name: "⚡ Repo 1: Fullstack E-Commerce", path: "./benchmark_repos/repo1_ecommerce_fullstack" },
-    { name: "☁️ Repo 2: Cloud Microservice",   path: "./benchmark_repos/repo2_cloud_microservice" },
-    { name: "🏦 Repo 3: Polyglot Fintech",     path: "./benchmark_repos/repo3_polyglot_fintech" },
-    { name: "📱 Repo 4: FastAPI + React",       path: "./benchmark_repos/repo4_fastapi_react" },
-    { name: "🚀 Repo 5: Cloud API Only",        path: "./benchmark_repos/repo5_fastapi_only" },
-    { name: "🟩 Repo 6: Node.js Express",       path: "./benchmark_repos/repo6_node_express" },
-    { name: "⚙️ Repo 7: Python Worker",         path: "./benchmark_repos/repo7_python_worker" },
-    { name: "🐷 Repo 8: Go Microservice",       path: "./benchmark_repos/repo8_go_microservice" },
-    { name: "🏛️ Repo 9: Python Monolith",       path: "./benchmark_repos/repo9_python_monolith" },
-  ];
-
-  const cyan   = darkMode ? "#38bdf8" : "#0284c7";
-  const green  = darkMode ? "#10b981" : "#059669";
-  const red    = darkMode ? "#f43f5e" : "#dc2626";
-  const amber  = darkMode ? "#f59e0b" : "#d97706";
-  const textPrimary   = darkMode ? "#f8fafc"  : "#0f172a";
-  const textSecondary = darkMode ? "#94a3b8"  : "#475569";
-  const textMuted     = darkMode ? "#64748b"  : "#94a3b8";
-  const cardBg        = darkMode ? "rgba(15,23,42,0.75)"  : "rgba(255,255,255,0.85)";
-  const cardBorder    = darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const presetBg      = darkMode ? "rgba(15,23,42,0.6)"   : "rgba(241,245,249,0.8)";
-  const presetBorder  = darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const cyan = darkMode ? "#38bdf8" : "#0284c7";
+  const green = darkMode ? "#10b981" : "#059669";
+  const red = darkMode ? "#f43f5e" : "#dc2626";
+  const amber = darkMode ? "#f59e0b" : "#d97706";
+  const purple = darkMode ? "#a855f7" : "#7c3aed";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textMuted = darkMode ? "#64748b" : "#94a3b8";
+  const cardBg = darkMode ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)";
+  const cardBorder = darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
 
   return (
-    <header style={{ marginBottom: "28px" }}>
-      {/* Top Brand Bar */}
+    <header style={{ marginBottom: "24px" }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "16px 20px",
+          padding: "14px 22px",
           borderRadius: "16px",
           background: cardBg,
           backdropFilter: "blur(16px)",
           border: `1px solid ${cardBorder}`,
-          marginBottom: "16px",
           boxShadow: darkMode
             ? "0 8px 32px rgba(0,0,0,0.4)"
-            : "0 4px 24px rgba(0,0,0,0.08)",
+            : "0 4px 20px rgba(0,0,0,0.06)",
         }}
       >
-        {/* Logo + Branding */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        {/* Logo + Branding (Clicking returns to Landing) */}
+        <div
+          onClick={onNavigateLanding}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            cursor: "pointer",
+            userSelect: "none",
+          }}
+        >
           <div
             style={{
-              width: "44px",
-              height: "44px",
+              width: "42px",
+              height: "42px",
               borderRadius: "12px",
               background: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: `0 0 20px ${cyan}66`,
+              boxShadow: `0 0 18px ${cyan}55`,
             }}
           >
-            <Shield size={24} color="#ffffff" />
+            <Shield size={22} color="#ffffff" />
           </div>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h1
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span
                 style={{
-                  margin: 0,
-                  fontSize: "24px",
+                  fontSize: "22px",
                   fontWeight: 800,
                   letterSpacing: "-0.5px",
-                  background: darkMode
-                    ? "linear-gradient(90deg, #f8fafc 0%, #94a3b8 100%)"
-                    : "linear-gradient(90deg, #0f172a 0%, #334155 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
+                  color: textPrimary,
                 }}
               >
-                TraceGuard
-              </h1>
+                Trace<span style={{ color: cyan }}>Guard</span>
+              </span>
               <span
                 style={{
                   fontSize: "11px",
                   fontWeight: 700,
                   padding: "2px 8px",
                   borderRadius: "9999px",
-                  background: `${cyan}22`,
+                  background: `${cyan}20`,
                   color: cyan,
                   border: `1px solid ${cyan}44`,
                   letterSpacing: "0.5px",
                 }}
               >
-                v1.0.0 RELEASE
+                v1.0.0
               </span>
             </div>
-            <p style={{ margin: "2px 0 0 0", color: textMuted, fontSize: "13px" }}>
-              Architecture-Agnostic Repository Integrity Agent • Tree-sitter &amp; NetworkX ERCG Engine
+            <p style={{ margin: "2px 0 0 0", color: textMuted, fontSize: "12px" }}>
+              Architecture-Agnostic Repository Integrity Agent
             </p>
           </div>
         </div>
 
-        {/* Right Controls */}
+        {/* Right Navigation & Controls */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Health Indicator */}
+          {/* Quick Nav Links */}
+          {currentView !== "workspace" && onNavigateWorkspace && (
+            <button
+              onClick={onNavigateWorkspace}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 600,
+                background: `${cyan}18`,
+                border: `1px solid ${cyan}44`,
+                color: cyan,
+                cursor: "pointer",
+              }}
+            >
+              <Terminal size={14} color={cyan} />
+              <span>Audit Workspace</span>
+            </button>
+          )}
+
+          {currentView !== "history" && onNavigateHistory && (
+            <button
+              onClick={onNavigateHistory}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 600,
+                background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+                border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+                color: textPrimary,
+                cursor: "pointer",
+              }}
+            >
+              <History size={14} color={purple} />
+              <span>History</span>
+            </button>
+          )}
+
+          {/* Engine Health Indicator */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              padding: "6px 14px",
+              padding: "6px 12px",
               borderRadius: "9999px",
               background: darkMode ? "rgba(11,17,32,0.8)" : "rgba(241,245,249,0.9)",
               border:
@@ -140,9 +177,9 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
                   : serverHealth === false ? red
                   : amber,
                 boxShadow:
-                  serverHealth === true ? `0 0 10px ${green}`
-                  : serverHealth === false ? `0 0 10px ${red}`
-                  : `0 0 10px ${amber}`,
+                  serverHealth === true ? `0 0 8px ${green}`
+                  : serverHealth === false ? `0 0 8px ${red}`
+                  : `0 0 8px ${amber}`,
                 display: "inline-block",
               }}
             />
@@ -159,8 +196,8 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
               {serverHealth === true
                 ? "FastAPI Engine Online"
                 : serverHealth === false
-                ? "FastAPI Engine Offline"
-                : "Connecting to Engine…"}
+                ? "FastAPI Offline"
+                : "Connecting…"}
             </span>
           </div>
 
@@ -172,8 +209,8 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: "40px",
-              height: "40px",
+              width: "38px",
+              height: "38px",
               borderRadius: "10px",
               background: darkMode
                 ? "rgba(248,215,70,0.1)"
@@ -186,63 +223,9 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
               color: darkMode ? "#fbbf24" : "#0f172a",
             }}
           >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            {darkMode ? <Sun size={17} /> : <Moon size={17} />}
           </button>
         </div>
-      </div>
-
-      {/* Benchmark Repo Quick-Picker */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          overflowX: "auto",
-          paddingBottom: "4px",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            color: textMuted,
-            marginRight: "4px",
-            whiteSpace: "nowrap",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
-          <Sparkles size={12} color={cyan} /> Benchmark Suites:
-        </span>
-        {presets.map((p) => {
-          const isSelected = selectedRepo === p.path;
-          return (
-            <button
-              key={p.path}
-              onClick={() => onSelectPresetRepo(p.path)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: isSelected ? 700 : 500,
-                background: isSelected
-                  ? `${cyan}33`
-                  : presetBg,
-                border: isSelected
-                  ? `1px solid ${cyan}`
-                  : `1px solid ${presetBorder}`,
-                color: isSelected ? cyan : textSecondary,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {p.name}
-            </button>
-          );
-        })}
       </div>
     </header>
   );
