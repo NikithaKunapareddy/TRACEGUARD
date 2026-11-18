@@ -14,6 +14,13 @@ import {
   Code2,
   Clock,
   Lock,
+  Layers,
+  Terminal,
+  Server,
+  Database,
+  Cpu,
+  Check,
+  Zap,
 } from "lucide-react";
 
 interface AuditWorkspaceProps {
@@ -133,31 +140,69 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [benchmarkSearch, setBenchmarkSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState("ALL");
   const [hoveredBenchmarkId, setHoveredBenchmarkId] = useState<string | null>(null);
 
-  const cyan = darkMode ? "#38bdf8" : "#0284c7";
-  const purple = darkMode ? "#a855f7" : "#7c3aed";
-  const emerald = darkMode ? "#10b981" : "#059669";
-  const rose = darkMode ? "#f43f5e" : "#dc2626";
-  const amber = darkMode ? "#f59e0b" : "#d97706";
-  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
-  const textSecondary = darkMode ? "#94a3b8" : "#475569";
-  const textMuted = darkMode ? "#64748b" : "#94a3b8";
+  // Enterprise cybersecurity color tokens
+  const cyan = darkMode ? "#00F0FF" : "#0284C7";
+  const cyanSoft = darkMode ? "#38BDF8" : "#0EA5E9";
+  const purple = darkMode ? "#A855F7" : "#7C3AED";
+  const emerald = darkMode ? "#10B981" : "#059669";
+  const rose = darkMode ? "#F43F5E" : "#DC2626";
+  const amber = darkMode ? "#F59E0B" : "#D97706";
+  const blue = darkMode ? "#3B82F6" : "#2563EB";
 
-  const cardStyle: React.CSSProperties = {
-    background: darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff",
-    backdropFilter: "blur(16px)",
-    border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
-    borderRadius: "16px",
-    padding: "24px",
-    boxShadow: darkMode ? "0 8px 32px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.06)",
-  };
+  const textPrimary = darkMode ? "#F8FAFC" : "#0F172A";
+  const textSecondary = darkMode ? "#94A3B8" : "#475569";
+  const textMuted = darkMode ? "#64748B" : "#94A3B8";
 
-  const availableCategories = [
-    { key: "security", label: "Security Vulnerabilities", icon: <ShieldAlert size={14} color={rose} /> },
-    { key: "gap", label: "Negative-Space & Gaps", icon: <Puzzle size={14} color={emerald} /> },
-    { key: "slop", label: "Code Slop & Redundancy", icon: <Code2 size={14} color={amber} /> },
-    { key: "loose_end", label: "Loose Ends & Hygiene", icon: <Clock size={14} color={purple} /> },
+  const panelBg = darkMode ? "#101A2B" : "#FFFFFF";
+  const cardBg = darkMode ? "#111D30" : "#FFFFFF";
+  const borderSubtle = darkMode ? "rgba(56, 189, 248, 0.12)" : "rgba(0, 0, 0, 0.08)";
+  const borderHover = darkMode ? "rgba(56, 189, 248, 0.4)" : "rgba(2, 132, 199, 0.4)";
+
+  // 4 Core Inspection Dimensions
+  const inspectionDimensions = [
+    {
+      key: "security",
+      label: "Security Vulnerabilities",
+      badge: "Taint Analysis",
+      desc: "Cross-file taint propagation, SQL injection, unprotected endpoints & secrets",
+      icon: <ShieldAlert size={18} color={rose} />,
+      color: rose,
+      accentBg: darkMode ? "rgba(244, 63, 94, 0.12)" : "rgba(220, 38, 38, 0.08)",
+      borderActive: darkMode ? "rgba(244, 63, 94, 0.45)" : "rgba(220, 38, 38, 0.35)",
+    },
+    {
+      key: "gap",
+      label: "Negative-Space Gaps",
+      badge: "Structural Absence",
+      desc: "Dangling frontend client calls, unbacked routes, mock checkout stubs",
+      icon: <Puzzle size={18} color={amber} />,
+      color: amber,
+      accentBg: darkMode ? "rgba(245, 158, 11, 0.12)" : "rgba(217, 119, 6, 0.08)",
+      borderActive: darkMode ? "rgba(245, 158, 11, 0.45)" : "rgba(217, 119, 6, 0.35)",
+    },
+    {
+      key: "slop",
+      label: "Code Slop & Redundancy",
+      badge: "Quality & Debt",
+      desc: "Duplicate logic, redundant functions, dead controller handlers",
+      icon: <Code2 size={18} color={purple} />,
+      color: purple,
+      accentBg: darkMode ? "rgba(168, 85, 247, 0.12)" : "rgba(124, 58, 237, 0.08)",
+      borderActive: darkMode ? "rgba(168, 85, 247, 0.45)" : "rgba(124, 58, 237, 0.35)",
+    },
+    {
+      key: "loose_end",
+      label: "Development Hygiene",
+      badge: "Reliability",
+      desc: "Blind exception suppression, leftover console logs, unanchored routes",
+      icon: <Sparkles size={18} color={emerald} />,
+      color: emerald,
+      accentBg: darkMode ? "rgba(16, 185, 129, 0.12)" : "rgba(5, 150, 105, 0.08)",
+      borderActive: darkMode ? "rgba(16, 185, 129, 0.45)" : "rgba(5, 150, 105, 0.35)",
+    },
   ];
 
   const toggleCategory = (key: string) => {
@@ -166,22 +211,30 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
     );
   };
 
+  // Filter benchmarks by search and tag
   const filteredBenchmarks = useMemo(() => {
-    if (!benchmarkSearch.trim()) return BENCHMARKS;
-    const q = benchmarkSearch.toLowerCase();
-    return BENCHMARKS.filter(
-      (b) =>
+    return BENCHMARKS.filter((b) => {
+      const matchesTag =
+        selectedTag === "ALL" ||
+        b.tag.toUpperCase() === selectedTag ||
+        b.tech.some((t) => t.toUpperCase().includes(selectedTag));
+
+      const q = benchmarkSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
         b.name.toLowerCase().includes(q) ||
         b.path.toLowerCase().includes(q) ||
         b.description.toLowerCase().includes(q) ||
-        b.tech.some((t) => t.toLowerCase().includes(q))
-    );
-  }, [benchmarkSearch]);
+        b.tech.some((t) => t.toLowerCase().includes(q));
+
+      return matchesTag && matchesSearch;
+    });
+  }, [benchmarkSearch, selectedTag]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!repoPath.trim()) {
-      setError("Please provide or select a repository filesystem path.");
+      setError("Please provide or select a target repository filesystem path.");
       return;
     }
 
@@ -207,103 +260,212 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
 
   return (
     <div style={{ paddingBottom: "40px" }}>
-      {/* Top Header & Breadcrumb */}
+      {/* ── Top Operations Command Bar ───────────────────────────────────────── */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px",
+          flexWrap: "wrap",
+          gap: "14px",
+          marginBottom: "24px",
+          padding: "12px 18px",
+          borderRadius: "14px",
+          background: darkMode ? "rgba(16, 26, 43, 0.75)" : "rgba(255, 255, 255, 0.9)",
+          border: `1px solid ${borderSubtle}`,
+          backdropFilter: "blur(14px)",
         }}
       >
-        <button
-          onClick={onBackToLanding}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 16px",
-            borderRadius: "10px",
-            fontSize: "13px",
-            fontWeight: 600,
-            background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
-            border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
-            color: textPrimary,
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-          }}
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Home</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button
+            onClick={onBackToLanding}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              padding: "7px 14px",
+              borderRadius: "8px",
+              fontSize: "12.5px",
+              fontWeight: 700,
+              color: textPrimary,
+              background: darkMode ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
+              border: `1px solid ${borderSubtle}`,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <ArrowLeft size={15} />
+            <span>PORTAL HOME</span>
+          </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: textMuted }}>
-          <Lock size={13} color={emerald} />
-          <span>Strict read-only target guarantee</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: textMuted }}>
+            <span>OPERATIONS</span>
+            <span>/</span>
+            <span style={{ color: cyan, fontWeight: 700 }}>WORKSPACE</span>
+          </div>
+        </div>
+
+        {/* Security & Sandbox Telemetry Pills */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "11px",
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: "9999px",
+              background: darkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(5, 150, 105, 0.08)",
+              border: `1px solid ${emerald}33`,
+              color: emerald,
+            }}
+          >
+            <Lock size={12} />
+            <span>STRICT READ-ONLY SANDBOX</span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "11px",
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: "9999px",
+              background: darkMode ? "rgba(0, 240, 255, 0.1)" : "rgba(2, 132, 199, 0.08)",
+              border: `1px solid ${cyan}33`,
+              color: cyan,
+            }}
+          >
+            <Zap size={12} />
+            <span>FASTAPI ENGINE CONNECTED</span>
+          </div>
         </div>
       </div>
 
-      {/* Responsive 2-column / 1-column layout without clipping */}
+      {/* ── 2-Column Responsive Workspace Grid ──────────────────────────────── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(440px, 1fr))",
           gap: "24px",
           alignItems: "start",
         }}
       >
-        {/* Left Column: Repository & Benchmark Selection */}
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-            <FolderOpen size={18} color={cyan} />
-            <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: textPrimary }}>
-              Target Repository Selection
-            </h2>
+        {/* ==================================================================== */}
+        {/* Left Column: Repository Target Selection                            */}
+        {/* ==================================================================== */}
+        <div
+          style={{
+            background: panelBg,
+            borderRadius: "18px",
+            border: `1px solid ${borderSubtle}`,
+            padding: "26px",
+            boxShadow: darkMode ? "0 16px 40px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "4px" }}>
+                <Server size={18} color={cyan} />
+                <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: textPrimary, letterSpacing: "-0.3px" }}>
+                  Target Repository
+                </h2>
+              </div>
+              <p style={{ margin: 0, fontSize: "13px", color: textSecondary }}>
+                Select an architecture benchmark suite or mount a custom directory.
+              </p>
+            </div>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                padding: "3px 9px",
+                borderRadius: "9999px",
+                background: `${cyan}18`,
+                color: cyan,
+                border: `1px solid ${cyan}33`,
+              }}
+            >
+              {filteredBenchmarks.length} SUITES
+            </span>
           </div>
-          <p style={{ margin: "0 0 18px 0", fontSize: "13px", color: textSecondary }}>
-            Choose one of the 9 benchmark test suites or enter a custom local path.
-          </p>
+
+          {/* Architecture Quick-Filter Chips */}
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "14px" }}>
+            {["ALL", "POLYGLOT", "CLOUD", "FINTECH", "FULLSTACK", "GO", "NODE", "ENTERPRISE"].map((tag) => {
+              const active = selectedTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTag(tag)}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: active ? 800 : 600,
+                    color: active ? "#FFFFFF" : textSecondary,
+                    background: active
+                      ? cyan
+                      : darkMode
+                      ? "rgba(255, 255, 255, 0.04)"
+                      : "rgba(0, 0, 0, 0.04)",
+                    border: active ? `1px solid ${cyan}` : `1px solid ${borderSubtle}`,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Search Benchmarks */}
-          <div style={{ position: "relative", marginBottom: "14px" }}>
+          <div style={{ position: "relative", marginBottom: "16px" }}>
             <Search
-              size={14}
+              size={15}
               color={textMuted}
               style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
             />
             <input
               type="text"
-              placeholder="Search benchmark suites by keyword (Python, Go, React, FastAPI...)"
+              placeholder="Filter by technology or architecture (FastAPI, React, Go, Microservice)..."
               value={benchmarkSearch}
               onChange={(e) => setBenchmarkSearch(e.target.value)}
               style={{
                 width: "100%",
-                padding: "9px 12px 9px 34px",
+                padding: "10px 14px 10px 36px",
                 borderRadius: "10px",
-                background: darkMode ? "rgba(3, 7, 18, 0.6)" : "rgba(241, 245, 249, 0.8)",
-                border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+                background: darkMode ? "rgba(7, 11, 20, 0.7)" : "rgba(248, 250, 252, 0.9)",
+                border: `1px solid ${borderSubtle}`,
                 color: textPrimary,
                 fontSize: "13px",
                 outline: "none",
+                fontFamily: "inherit",
               }}
             />
           </div>
 
-          {/* Benchmark Grid (All 9) */}
+          {/* Server Blade Repository Cards List */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "8px",
-              maxHeight: "380px",
+              gap: "10px",
+              maxHeight: "410px",
               overflowY: "auto",
-              paddingRight: "4px",
+              paddingRight: "6px",
               marginBottom: "20px",
             }}
           >
             {filteredBenchmarks.map((b) => {
               const isSelected = repoPath === b.path;
               const isHovered = hoveredBenchmarkId === b.id;
+
               return (
                 <div
                   key={b.id}
@@ -311,66 +473,103 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
                   onMouseEnter={() => setHoveredBenchmarkId(b.id)}
                   onMouseLeave={() => setHoveredBenchmarkId(null)}
                   style={{
-                    padding: "14px 16px",
+                    position: "relative",
+                    padding: "14px 16px 14px 20px",
                     borderRadius: "12px",
                     background: isSelected
-                      ? `${cyan}20`
+                      ? darkMode
+                        ? "linear-gradient(90deg, rgba(0, 240, 255, 0.12) 0%, rgba(17, 29, 48, 0.9) 100%)"
+                        : "linear-gradient(90deg, rgba(2, 132, 199, 0.1) 0%, rgba(248, 250, 252, 0.95) 100%)"
                       : isHovered
                       ? darkMode
-                        ? "rgba(56, 189, 248, 0.08)"
-                        : "rgba(2, 132, 199, 0.08)"
-                      : darkMode
-                      ? "rgba(255, 255, 255, 0.03)"
-                      : "rgba(248, 250, 252, 0.95)",
+                        ? "#152238"
+                        : "#F1F5F9"
+                      : cardBg,
                     border: isSelected
-                      ? `2px solid ${cyan}`
+                      ? `1.5px solid ${cyan}`
                       : isHovered
-                      ? `1.5px solid ${cyan}88`
-                      : darkMode
-                      ? "1px solid rgba(255, 255, 255, 0.07)"
-                      : "1px solid #e2e8f0",
+                      ? `1px solid ${borderHover}`
+                      : `1px solid ${borderSubtle}`,
                     boxShadow: isSelected
-                      ? `0 0 20px ${cyan}35`
+                      ? `0 0 24px rgba(0, 240, 255, 0.22)`
                       : isHovered
-                      ? `0 6px 20px rgba(0, 0, 0, ${darkMode ? "0.35" : "0.08"})`
+                      ? "0 6px 20px rgba(0, 0, 0, 0.2)"
                       : "none",
                     transform: isHovered ? "translateY(-1.5px)" : "none",
                     cursor: "pointer",
-                    transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
+                    transition: "all 0.16s ease",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "13.5px", color: isSelected ? cyan : textPrimary }}>
-                      {b.name}
-                    </span>
+                  {/* Left Active Accent Bar */}
+                  {isSelected && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: "12px",
+                        bottom: "12px",
+                        width: "3.5px",
+                        borderRadius: "0 4px 4px 0",
+                        background: cyan,
+                        boxShadow: `0 0 10px ${cyan}`,
+                      }}
+                    />
+                  )}
+
+                  {/* Top: Name & Tag */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontWeight: 800, fontSize: "14px", color: isSelected ? cyan : textPrimary }}>
+                        {b.name}
+                      </span>
+                      {isSelected && (
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            padding: "1px 6px",
+                            borderRadius: "4px",
+                            background: cyan,
+                            color: "#070B14",
+                          }}
+                        >
+                          LOCKED
+                        </span>
+                      )}
+                    </div>
                     <span
                       style={{
                         fontSize: "10.5px",
                         fontWeight: 700,
                         padding: "2px 8px",
                         borderRadius: "9999px",
-                        background: isSelected ? `${cyan}33` : darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
+                        background: isSelected ? `${cyan}25` : darkMode ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
                         color: isSelected ? cyan : textSecondary,
+                        border: `1px solid ${borderSubtle}`,
                       }}
                     >
                       {b.tag}
                     </span>
                   </div>
-                  <div style={{ fontSize: "12px", color: textSecondary, marginBottom: "8px", lineHeight: 1.4 }}>
+
+                  {/* Description */}
+                  <div style={{ fontSize: "12px", color: textSecondary, marginBottom: "10px", lineHeight: 1.45 }}>
                     {b.description}
                   </div>
 
+                  {/* Tech stack badges */}
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {b.tech.map((t) => (
                       <span
                         key={t}
                         style={{
                           fontSize: "10.5px",
-                          color: isSelected ? cyan : textMuted,
-                          padding: "2px 7px",
+                          fontWeight: 600,
+                          color: isSelected ? cyanSoft : textMuted,
+                          padding: "2px 8px",
                           borderRadius: "4px",
-                          background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
-                          border: darkMode ? "1px solid rgba(255, 255, 255, 0.06)" : "1px solid rgba(0, 0, 0, 0.06)",
+                          background: darkMode ? "rgba(7, 11, 20, 0.6)" : "rgba(0, 0, 0, 0.04)",
+                          border: `1px solid ${borderSubtle}`,
                         }}
                       >
                         {t}
@@ -382,10 +581,18 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
             })}
           </div>
 
-          {/* Custom Path Input */}
-          <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textSecondary, marginBottom: "6px" }}>
-              Active Filesystem Path (or enter custom directory)
+          {/* Custom Local Path Input */}
+          <div
+            style={{
+              padding: "14px",
+              borderRadius: "12px",
+              background: darkMode ? "rgba(7, 11, 20, 0.7)" : "rgba(248, 250, 252, 0.9)",
+              border: `1px solid ${borderSubtle}`,
+            }}
+          >
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 700, color: textSecondary, marginBottom: "8px" }}>
+              <Terminal size={14} color={cyan} />
+              <span>Custom Local Filesystem Mount Path</span>
             </label>
             <input
               type="text"
@@ -395,11 +602,11 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
               style={{
                 width: "100%",
                 padding: "11px 14px",
-                borderRadius: "10px",
-                background: darkMode ? "rgba(3, 7, 18, 0.7)" : "rgba(241, 245, 249, 0.9)",
-                border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
+                borderRadius: "8px",
+                background: darkMode ? "#070B14" : "#FFFFFF",
+                border: `1px solid ${borderSubtle}`,
                 color: textPrimary,
-                fontSize: "13px",
+                fontSize: "12.5px",
                 fontFamily: "JetBrains Mono, monospace",
                 outline: "none",
               }}
@@ -407,118 +614,182 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Audit Configuration & Execution */}
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-            <Sparkles size={18} color={purple} />
-            <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: textPrimary }}>
-              Audit Configuration
-            </h2>
+        {/* ==================================================================== */}
+        {/* Right Column: Audit Configuration Matrix & Execution                */}
+        {/* ==================================================================== */}
+        <div
+          style={{
+            background: panelBg,
+            borderRadius: "18px",
+            border: `1px solid ${borderSubtle}`,
+            padding: "26px",
+            boxShadow: darkMode ? "0 16px 40px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
+          }}
+        >
+          {/* Header */}
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "4px" }}>
+              <Layers size={18} color={purple} />
+              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: textPrimary, letterSpacing: "-0.3px" }}>
+                Inspection Matrix
+              </h2>
+            </div>
+            <p style={{ margin: 0, fontSize: "13px", color: textSecondary }}>
+              Configure analysis dimensions, sensitivity thresholds and state caching.
+            </p>
           </div>
-          <p style={{ margin: "0 0 20px 0", fontSize: "13px", color: textSecondary }}>
-            Configure detection sensitivity, category filters and incremental auditing.
-          </p>
 
           <form onSubmit={handleSubmit}>
-            {/* Minimum Severity Selector */}
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textSecondary, marginBottom: "6px" }}>
-                Minimum Severity Threshold
-              </label>
-              <select
-                value={minSeverity}
-                onChange={(e) => setMinSeverity(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "11px 14px",
-                  borderRadius: "10px",
-                  background: darkMode ? "rgba(3, 7, 18, 0.7)" : "rgba(241, 245, 249, 0.9)",
-                  border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
-                  color: textPrimary,
-                  fontSize: "13px",
-                  outline: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">All Severities (info → critical)</option>
-                <option value="low">Low, Medium, High &amp; Critical</option>
-                <option value="medium">Medium, High &amp; Critical</option>
-                <option value="high">High &amp; Critical Only</option>
-                <option value="critical">Critical Only</option>
-              </select>
-              <div style={{ fontSize: "11px", color: textMuted, marginTop: "4px" }}>
-                Repository-wide score is always calculated on full repository findings.
+            {/* 4 Interactive Dimension Tiles */}
+            <div style={{ marginBottom: "22px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Analysis Dimensions ({categories.length === 0 ? "ALL 4 ACTIVE" : `${categories.length} SELECTED`})
+                </label>
+                {categories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCategories([])}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: cyan,
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    RESET TO ALL
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                {inspectionDimensions.map((dim) => {
+                  const isChecked = categories.includes(dim.key);
+                  const isAllMode = categories.length === 0;
+                  const isActive = isChecked || isAllMode;
+
+                  return (
+                    <div
+                      key={dim.key}
+                      onClick={() => toggleCategory(dim.key)}
+                      style={{
+                        padding: "14px",
+                        borderRadius: "12px",
+                        background: isActive ? dim.accentBg : darkMode ? "rgba(7, 11, 20, 0.4)" : "rgba(0, 0, 0, 0.02)",
+                        border: isActive ? `1.5px solid ${dim.borderActive}` : `1px solid ${borderSubtle}`,
+                        cursor: "pointer",
+                        transition: "all 0.16s ease",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {dim.icon}
+                          <span style={{ fontSize: "13px", fontWeight: 700, color: isActive ? textPrimary : textMuted }}>
+                            {dim.label}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            padding: "1px 6px",
+                            borderRadius: "4px",
+                            background: isActive ? `${dim.color}25` : "transparent",
+                            color: isActive ? dim.color : textMuted,
+                            border: `1px solid ${dim.borderActive}`,
+                          }}
+                        >
+                          {dim.badge}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "11.5px", color: textSecondary, lineHeight: 1.4 }}>
+                        {dim.desc}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Category Filter Toggles */}
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textSecondary, marginBottom: "8px" }}>
-                Filter Analysis Categories (Optional)
+            {/* Minimum Severity Selector */}
+            <div style={{ marginBottom: "22px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textSecondary, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
+                Detection Sensitivity Bounds
               </label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                {availableCategories.map((cat) => {
-                  const isChecked = categories.includes(cat.key);
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
+                {[
+                  { value: "", label: "ALL", sub: "Info → Crit", color: cyan },
+                  { value: "low", label: "LOW+", sub: "Exclude Info", color: blue },
+                  { value: "medium", label: "MED+", sub: "Med & Above", color: amber },
+                  { value: "high", label: "HIGH+", sub: "High & Crit", color: "#F97316" },
+                  { value: "critical", label: "CRIT", sub: "Critical Only", color: rose },
+                ].map((s) => {
+                  const active = minSeverity === s.value;
                   return (
                     <button
                       type="button"
-                      key={cat.key}
-                      onClick={() => toggleCategory(cat.key)}
+                      key={s.label}
+                      onClick={() => setMinSeverity(s.value)}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "10px 12px",
-                        borderRadius: "10px",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        background: isChecked
-                          ? `${cyan}20`
-                          : darkMode
-                          ? "rgba(255, 255, 255, 0.03)"
-                          : "rgba(0, 0, 0, 0.02)",
-                        border: isChecked
-                          ? `1px solid ${cyan}`
-                          : darkMode
-                          ? "1px solid rgba(255, 255, 255, 0.08)"
-                          : "1px solid rgba(0, 0, 0, 0.08)",
-                        color: isChecked ? cyan : textSecondary,
+                        padding: "8px 6px",
+                        borderRadius: "8px",
+                        background: active ? `${s.color}25` : darkMode ? "rgba(7, 11, 20, 0.5)" : "rgba(0, 0, 0, 0.03)",
+                        border: active ? `1.5px solid ${s.color}` : `1px solid ${borderSubtle}`,
+                        color: active ? s.color : textSecondary,
                         cursor: "pointer",
-                        textAlign: "left",
+                        textAlign: "center",
+                        transition: "all 0.15s ease",
                       }}
                     >
-                      {cat.icon}
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {cat.label}
-                      </span>
+                      <div style={{ fontSize: "11.5px", fontWeight: 800 }}>{s.label}</div>
+                      <div style={{ fontSize: "9.5px", color: textMuted }}>{s.sub}</div>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Incremental Auditing Checkbox */}
+            {/* Incremental Auditing Engine Switch */}
             <div
               style={{
-                marginBottom: "24px",
-                padding: "12px",
-                borderRadius: "10px",
-                background: darkMode ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
-                border: darkMode ? "1px solid rgba(255, 255, 255, 0.06)" : "1px solid rgba(0, 0, 0, 0.06)",
+                marginBottom: "26px",
+                padding: "14px 16px",
+                borderRadius: "12px",
+                background: darkMode ? "rgba(7, 11, 20, 0.6)" : "rgba(248, 250, 252, 0.9)",
+                border: `1px solid ${borderSubtle}`,
               }}
             >
-              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
                 <input
                   type="checkbox"
                   checked={incremental}
                   onChange={(e) => setIncremental(e.target.checked)}
-                  style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: cyan }}
+                  style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: cyan }}
                 />
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: textPrimary }}>
-                    Enable Change-Aware Incremental Auditing
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: textPrimary }}>
+                      Change-Aware Incremental Auditing
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                        background: `${emerald}20`,
+                        color: emerald,
+                      }}
+                    >
+                      SQLITE ENGINE
+                    </span>
                   </div>
-                  <div style={{ fontSize: "11px", color: textMuted }}>
+                  <div style={{ fontSize: "11.5px", color: textMuted, lineHeight: 1.4 }}>
                     Compares stable finding IDs against prior SQLite audits to assign NEW, RESOLVED, or REINTRODUCED lifecycle states.
                   </div>
                 </div>
@@ -546,40 +817,47 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
               </div>
             )}
 
-            {/* Submit Run Button */}
+            {/* Cinematic Launch Action Button */}
             <button
               type="submit"
               disabled={loading || isScanning}
               style={{
                 width: "100%",
-                padding: "14px 20px",
+                padding: "15px 22px",
                 borderRadius: "12px",
                 fontSize: "15px",
-                fontWeight: 700,
-                color: "#ffffff",
-                background: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+                fontWeight: 800,
+                color: "#FFFFFF",
+                background: darkMode
+                  ? "linear-gradient(135deg, #00F0FF 0%, #0077B6 60%, #7209B7 100%)"
+                  : "linear-gradient(135deg, #0284C7 0%, #2563EB 100%)",
                 border: "none",
                 cursor: loading || isScanning ? "not-allowed" : "pointer",
-                boxShadow: `0 6px 20px ${cyan}44`,
+                boxShadow: `0 8px 28px ${cyan}55`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "10px",
-                opacity: loading || isScanning ? 0.7 : 1,
+                letterSpacing: "0.2px",
+                opacity: loading || isScanning ? 0.75 : 1,
+                transition: "all 0.18s ease",
               }}
             >
               {loading || isScanning ? (
                 <>
-                  <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
-                  <span>Auditing Repository AST &amp; Constructing ERCG…</span>
+                  <Loader2 size={19} style={{ animation: "spin 1s linear infinite" }} />
+                  <span>PARSING AST &amp; TRAVERSING ERCG TOPOLOGY…</span>
                 </>
               ) : (
                 <>
-                  <Play size={16} fill="#ffffff" />
-                  <span>Run TraceGuard Audit</span>
+                  <Play size={16} fill="#FFFFFF" />
+                  <span>LAUNCH REPOSITORY INTEGRITY AUDIT</span>
                 </>
               )}
             </button>
+            <div style={{ textAlign: "center", marginTop: "10px", fontSize: "11px", color: textMuted }}>
+              Target filesystem remains strictly read-only • Deterministic AST &amp; ERCG analysis
+            </div>
           </form>
         </div>
       </div>

@@ -6,8 +6,14 @@ import {
   Code2,
   ArrowRight,
   History,
-  Sparkles,
   CheckCircle2,
+  Lock,
+  GitBranch,
+  Network,
+  Cpu,
+  BarChart3,
+  ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 
 interface LandingHeroProps {
@@ -18,21 +24,20 @@ interface LandingHeroProps {
   totalAuditsCount?: number;
 }
 
-// ─── Particle types ────────────────────────────────────────────────────────────
-interface Particle {
+// ─── Topological Repository Intelligence Visualizer Canvas ───────────────────
+interface TopologyNode {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  r: number;
+  label: string;
+  type: "endpoint" | "controller" | "model" | "security" | "config";
   color: string;
 }
 
-// ─── Particle Canvas ──────────────────────────────────────────────────────────
-const ParticleCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
+const RepositoryTopologyCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
-  const particlesRef = useRef<Particle[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -40,11 +45,8 @@ const ParticleCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const COLORS_DARK = ["#38bdf8", "#a855f7", "#10b981", "#818cf8", "#34d399"];
-    const COLORS_LIGHT = ["#0284c7", "#7c3aed", "#059669", "#4f46e5", "#10b981"];
-    const COLORS = darkMode ? COLORS_DARK : COLORS_LIGHT;
-    const COUNT = 60;
-    const CONNECT_DIST = 120;
+    // Check prefers-reduced-motion
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
       canvas.width = canvas.offsetWidth;
@@ -52,63 +54,115 @@ const ParticleCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
     };
     resize();
 
-    // Initialise particles
-    particlesRef.current = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      r: Math.random() * 2.2 + 1,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    }));
+    // Semantic architecture graph nodes
+    const nodeTemplates: Array<{ label: string; type: TopologyNode["type"]; color: string }> = [
+      { label: "POST /checkout", type: "endpoint", color: darkMode ? "#00F0FF" : "#0284C7" },
+      { label: "GET /inventory", type: "endpoint", color: darkMode ? "#38BDF8" : "#0EA5E9" },
+      { label: "DELETE /admin", type: "security", color: darkMode ? "#F43F5E" : "#DC2626" },
+      { label: "OrderService", type: "controller", color: darkMode ? "#A855F7" : "#7C3AED" },
+      { label: "AuthGuard", type: "security", color: darkMode ? "#F43F5E" : "#DC2626" },
+      { label: "DatabasePool", type: "model", color: darkMode ? "#10B981" : "#059669" },
+      { label: "PaymentLedger", type: "model", color: darkMode ? "#10B981" : "#059669" },
+      { label: "JWT_SECRET", type: "config", color: darkMode ? "#F59E0B" : "#D97706" },
+      { label: "AuditSink", type: "controller", color: darkMode ? "#8B5CF6" : "#6D28D9" },
+      { label: "UserSession", type: "model", color: darkMode ? "#10B981" : "#059669" },
+    ];
 
-    const draw = () => {
+    const nodes: TopologyNode[] = nodeTemplates.map((t, i) => {
+      const angle = (i / nodeTemplates.length) * Math.PI * 2;
+      const radiusX = canvas.width * 0.38;
+      const radiusY = canvas.height * 0.36;
+      return {
+        x: canvas.width / 2 + Math.cos(angle) * radiusX + (Math.random() - 0.5) * 40,
+        y: canvas.height / 2 + Math.sin(angle) * radiusY + (Math.random() - 0.5) * 30,
+        vx: (Math.random() - 0.5) * (prefersReducedMotion ? 0 : 0.25),
+        vy: (Math.random() - 0.5) * (prefersReducedMotion ? 0 : 0.25),
+        label: t.label,
+        type: t.type,
+        color: t.color,
+      };
+    });
+
+    // Edges linking related components
+    const links: Array<[number, number]> = [
+      [0, 3], // POST /checkout -> OrderService
+      [1, 3], // GET /inventory -> OrderService
+      [2, 4], // DELETE /admin -> AuthGuard
+      [3, 5], // OrderService -> DatabasePool
+      [3, 6], // OrderService -> PaymentLedger
+      [4, 8], // AuthGuard -> AuditSink
+      [7, 4], // JWT_SECRET -> AuthGuard
+      [5, 9], // DatabasePool -> UserSession
+      [8, 5], // AuditSink -> DatabasePool
+    ];
+
+    let pulseTime = 0;
+
+    const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const pts = particlesRef.current;
+      pulseTime += 0.015;
 
       // Update positions
-      for (const p of pts) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-      }
-
-      // Draw connecting lines
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x;
-          const dy = pts[i].y - pts[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < CONNECT_DIST) {
-            const alpha = (1 - dist / CONNECT_DIST) * (darkMode ? 0.25 : 0.18);
-            ctx.beginPath();
-            ctx.moveTo(pts[i].x, pts[i].y);
-            ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = darkMode
-              ? `rgba(148,163,184,${alpha})`
-              : `rgba(71,85,105,${alpha})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
+      if (!prefersReducedMotion) {
+        for (const n of nodes) {
+          n.x += n.vx;
+          n.y += n.vy;
+          const pad = 40;
+          if (n.x < pad || n.x > canvas.width - pad) n.vx *= -1;
+          if (n.y < pad || n.y > canvas.height - pad) n.vy *= -1;
         }
       }
 
-      // Draw dots
-      for (const p of pts) {
+      // Draw edges with subtle animated pulse
+      for (let i = 0; i < links.length; i++) {
+        const [aIdx, bIdx] = links[i];
+        const a = nodes[aIdx];
+        const b = nodes[bIdx];
+        if (!a || !b) continue;
+
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color + (darkMode ? "cc" : "aa");
-        ctx.shadowBlur = darkMode ? 8 : 4;
-        ctx.shadowColor = p.color;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = darkMode ? "rgba(56, 189, 248, 0.12)" : "rgba(15, 23, 42, 0.08)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Traveling dataflow pulse
+        if (!prefersReducedMotion) {
+          const t = (pulseTime + i * 0.22) % 1;
+          const px = a.x + (b.x - a.x) * t;
+          const py = a.y + (b.y - a.y) * t;
+
+          ctx.beginPath();
+          ctx.arc(px, py, 2, 0, Math.PI * 2);
+          ctx.fillStyle = a.color;
+          ctx.globalAlpha = 0.65;
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
       }
 
-      animRef.current = requestAnimationFrame(draw);
+      // Draw nodes
+      for (const n of nodes) {
+        // Outer subtle halo
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = n.color;
+        ctx.globalAlpha = darkMode ? 0.35 : 0.2;
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Core pip
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = n.color;
+        ctx.fill();
+      }
+
+      animRef.current = requestAnimationFrame(render);
     };
 
-    animRef.current = requestAnimationFrame(draw);
+    animRef.current = requestAnimationFrame(render);
 
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
@@ -129,7 +183,8 @@ const ParticleCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
         height: "100%",
         pointerEvents: "none",
         zIndex: 0,
-        borderRadius: "24px",
+        borderRadius: "20px",
+        opacity: darkMode ? 0.8 : 0.5,
       }}
     />
   );
@@ -141,263 +196,196 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   onViewHistory,
   onExploreCapabilities,
   darkMode,
-  totalAuditsCount,
+  totalAuditsCount = 0,
 }) => {
-  const cyan = darkMode ? "#38bdf8" : "#0284c7";
-  const purple = darkMode ? "#a855f7" : "#7c3aed";
-  const emerald = darkMode ? "#10b981" : "#059669";
-  const amber = darkMode ? "#f59e0b" : "#d97706";
-  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
-  const textSecondary = darkMode ? "#94a3b8" : "#475569";
-  const textMuted = darkMode ? "#64748b" : "#94a3b8";
-
-  // Card hover state
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  // CTA hover
   const [ctaHovered, setCtaHovered] = useState(false);
+  const capabilitiesRef = useRef<HTMLDivElement>(null);
+
+  // Exact executive color palette
+  const cyan = darkMode ? "#00F0FF" : "#0284C7";
+  const cyanSoft = darkMode ? "#38BDF8" : "#0EA5E9";
+  const blue = darkMode ? "#3B82F6" : "#2563EB";
+  const purple = darkMode ? "#A855F7" : "#7C3AED";
+  const emerald = darkMode ? "#10B981" : "#059669";
+  const amber = darkMode ? "#F59E0B" : "#D97706";
+  const rose = darkMode ? "#F43F5E" : "#DC2626";
+
+  const textPrimary = darkMode ? "#F8FAFC" : "#0F172A";
+  const textSecondary = darkMode ? "#94A3B8" : "#475569";
+  const textMuted = darkMode ? "#64748B" : "#94A3B8";
+
+  const panelBg = darkMode ? "#101A2B" : "#FFFFFF";
+  const cardBg = darkMode ? "#111D30" : "#FFFFFF";
+  const borderSubtle = darkMode ? "rgba(56, 189, 248, 0.12)" : "rgba(0, 0, 0, 0.08)";
+  const borderHover = darkMode ? "rgba(56, 189, 248, 0.35)" : "rgba(2, 132, 199, 0.35)";
 
   const capabilities = [
     {
-      icon: <Shield size={14} color={cyan} />,
-      label: "Security Intelligence",
-      bg: `${cyan}18`,
-      border: `${cyan}33`,
-      color: cyan,
-      desc: "Cross-file taint tracking, SQL injection, unprotected endpoints & credential leakage.",
+      id: "sec",
+      icon: <Shield size={18} color={cyanSoft} />,
+      title: "Security Intelligence",
+      tag: "Deterministic AST",
+      color: cyanSoft,
+      bg: darkMode ? "rgba(0, 240, 255, 0.08)" : "rgba(2, 132, 199, 0.06)",
+      border: darkMode ? "rgba(0, 240, 255, 0.22)" : "rgba(2, 132, 199, 0.2)",
+      desc: "Cross-file taint tracking, SQL injection detection, unprotected privileged routes and hardcoded secret isolation.",
     },
     {
-      icon: <Layers size={14} color={purple} />,
-      label: "Architecture Intelligence",
-      bg: `${purple}18`,
-      border: `${purple}33`,
+      id: "arch",
+      icon: <Network size={18} color={purple} />,
+      title: "Architecture Intelligence",
+      tag: "NetworkX ERCG",
       color: purple,
-      desc: "Evidence-linked Repository Consistency Graph (ERCG) with 3D WebGL dependency topology.",
+      bg: darkMode ? "rgba(168, 85, 247, 0.08)" : "rgba(124, 58, 237, 0.06)",
+      border: darkMode ? "rgba(168, 85, 247, 0.22)" : "rgba(124, 58, 237, 0.2)",
+      desc: "Evidence-linked Repository Consistency Graph indexing all symbols, call relations, dataflows and dependency topologies in 2D & 3D.",
     },
     {
-      icon: <Puzzle size={14} color={emerald} />,
-      label: "Negative-Space Detection",
-      bg: `${emerald}18`,
-      border: `${emerald}33`,
-      color: emerald,
-      desc: "Detects what should exist but is missing: dangling client calls & mock stub implementations.",
+      id: "neg",
+      icon: <Puzzle size={18} color={rose} />,
+      title: "Negative-Space Detection",
+      tag: "Structural Absence",
+      color: rose,
+      bg: darkMode ? "rgba(244, 63, 94, 0.08)" : "rgba(220, 38, 38, 0.06)",
+      border: darkMode ? "rgba(244, 63, 94, 0.22)" : "rgba(220, 38, 38, 0.2)",
+      desc: "Discovers what should exist but is missing: dangling frontend client calls, mock checkout stubs and broken API contracts.",
     },
     {
-      icon: <Code2 size={14} color={amber} />,
-      label: "Engineering Quality",
-      bg: `${amber}18`,
-      border: `${amber}33`,
+      id: "eng",
+      icon: <Code2 size={18} color={amber} />,
+      title: "Engineering Quality",
+      tag: "Hygiene & Debt",
       color: amber,
-      desc: "Code slop, redundant functions, blind exception suppression & dead handler analysis.",
+      bg: darkMode ? "rgba(245, 158, 11, 0.08)" : "rgba(217, 119, 6, 0.06)",
+      border: darkMode ? "rgba(245, 158, 11, 0.22)" : "rgba(217, 119, 6, 0.2)",
+      desc: "Identifies code slop, redundant functions, blind exception suppression and dead controller handlers before production merges.",
     },
   ];
 
-  return (
-    <div style={{ padding: "20px 0 40px 0" }}>
-      {/* ── Keyframe styles ───────────────────────────────────────────────── */}
-      <style>{`
-        @keyframes float-pill {
-          0%, 100% { transform: translateY(0); }
-          50%       { transform: translateY(-4px); }
-        }
-        @keyframes card-in {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -200% 0; }
-          100% { background-position:  200% 0; }
-        }
-        @keyframes drift {
-          0%, 100% { transform: translate(0, 0); }
-          50%       { transform: translate(20px, -15px); }
-        }
-        @keyframes drift2 {
-          0%, 100% { transform: translate(0, 0); }
-          50%       { transform: translate(-18px, 12px); }
-        }
-        @keyframes drift3 {
-          0%, 100% { transform: translate(0, 0); }
-          50%       { transform: translate(10px, 20px); }
-        }
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50%       { opacity: 0.5; transform: scale(1.5); }
-        }
-        @keyframes hero-fade-in {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+  const handleScrollToCapabilities = () => {
+    if (capabilitiesRef.current) {
+      capabilitiesRef.current.scrollIntoView({ behavior: "smooth" });
+    } else {
+      onExploreCapabilities();
+    }
+  };
 
+  return (
+    <div style={{ padding: "10px 0 30px 0" }}>
       {/* ── Hero Container ─────────────────────────────────────────────────── */}
       <div
         style={{
-          borderRadius: "24px",
+          borderRadius: "20px",
           background: darkMode
-            ? "linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(10,15,29,0.98) 100%)"
-            : "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(248,250,252,0.97) 100%)",
-          border: darkMode
-            ? "1px solid rgba(56,189,248,0.22)"
-            : "1px solid rgba(0,0,0,0.09)",
-          backdropFilter: "blur(24px)",
-          padding: "54px 36px 44px 36px",
+            ? "linear-gradient(180deg, #0A1224 0%, #070B14 100%)"
+            : "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+          border: `1px solid ${borderSubtle}`,
           position: "relative",
           overflow: "hidden",
+          padding: "54px 36px 48px 36px",
           boxShadow: darkMode
-            ? "0 20px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.1)"
-            : "0 10px 30px rgba(0,0,0,0.07)",
+            ? "0 20px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+            : "0 10px 30px rgba(0, 0, 0, 0.06)",
           textAlign: "center",
-          marginBottom: "36px",
+          marginBottom: "32px",
         }}
       >
-        {/* Particle canvas */}
-        <ParticleCanvas darkMode={darkMode} />
+        {/* Subtle Ambient Topology Network Canvas (Behind Text) */}
+        <RepositoryTopologyCanvas darkMode={darkMode} />
 
-        {/* ── Animated glowing orbs ──────────────────────────────────────── */}
-        {/* Orb 1 – cyan, top-left */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-60px",
-            left: "10%",
-            width: "340px",
-            height: "340px",
-            borderRadius: "50%",
-            background: darkMode
-              ? "radial-gradient(circle, rgba(56,189,248,0.22) 0%, transparent 70%)"
-              : "radial-gradient(circle, rgba(2,132,199,0.14) 0%, transparent 70%)",
-            filter: "blur(32px)",
-            pointerEvents: "none",
-            animation: "drift 9s ease-in-out infinite",
-            zIndex: 0,
-          }}
-        />
-        {/* Orb 2 – purple, top-right */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-40px",
-            right: "8%",
-            width: "300px",
-            height: "300px",
-            borderRadius: "50%",
-            background: darkMode
-              ? "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)"
-              : "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)",
-            filter: "blur(28px)",
-            pointerEvents: "none",
-            animation: "drift2 11s ease-in-out infinite",
-            zIndex: 0,
-          }}
-        />
-        {/* Orb 3 – emerald, bottom-center */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "-80px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "360px",
-            height: "240px",
-            borderRadius: "50%",
-            background: darkMode
-              ? "radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)"
-              : "radial-gradient(circle, rgba(5,150,105,0.1) 0%, transparent 70%)",
-            filter: "blur(28px)",
-            pointerEvents: "none",
-            animation: "drift3 13s ease-in-out infinite",
-            zIndex: 0,
-          }}
-        />
-
-        {/* ── Content (above canvas & orbs) ─────────────────────────────── */}
-        <div
-          style={{
-            maxWidth: "860px",
-            margin: "0 auto",
-            position: "relative",
-            zIndex: 1,
-            animation: "hero-fade-in 0.7s ease both",
-          }}
-        >
-          {/* Capability pills */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
-              justifyContent: "center",
-              marginBottom: "24px",
-            }}
-          >
-            {capabilities.map((c, i) => (
+        {/* Hero Content (Clean, Z-Indexed Above Canvas) */}
+        <div style={{ position: "relative", zIndex: 1, maxWidth: "860px", margin: "0 auto" }}>
+          {/* Release Badge */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "22px" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "5px 14px",
+                borderRadius: "9999px",
+                background: darkMode ? "rgba(0, 240, 255, 0.08)" : "rgba(2, 132, 199, 0.08)",
+                border: darkMode ? "1px solid rgba(0, 240, 255, 0.28)" : "1px solid rgba(2, 132, 199, 0.25)",
+                color: cyan,
+                fontSize: "12px",
+                fontWeight: 700,
+                letterSpacing: "0.4px",
+              }}
+            >
               <span
-                key={c.label}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 14px",
-                  borderRadius: "9999px",
-                  background: c.bg,
-                  border: `1px solid ${c.border}`,
-                  color: c.color,
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  letterSpacing: "0.2px",
-                  animation: "float-pill 3s ease-in-out infinite",
-                  animationDelay: `${i * 0.2}s`,
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: cyan,
+                  boxShadow: `0 0 8px ${cyan}`,
                 }}
-              >
-                {c.icon}
-                {c.label}
-              </span>
-            ))}
+              />
+              ENTERPRISE REPOSITORY INTEGRITY AGENT v1.0.0
+            </span>
           </div>
 
-          {/* Main Headline */}
+          {/* ── Headline: Guaranteed High-Contrast & Readable ───────────────── */}
           <h1
             style={{
               margin: "0 0 18px 0",
-              fontSize: "44px",
-              lineHeight: 1.15,
+              fontSize: "clamp(34px, 5.2vw, 56px)",
+              lineHeight: 1.14,
               fontWeight: 800,
-              letterSpacing: "-1.2px",
-              color: textPrimary,
+              letterSpacing: "-0.035em",
             }}
           >
-            Know what's broken before it reaches production.
+            <span
+              style={{
+                display: "block",
+                color: textPrimary,
+                marginBottom: "4px",
+              }}
+            >
+              Understand your codebase.
+            </span>
+            <span
+              style={{
+                display: "inline-block",
+                background: darkMode
+                  ? "linear-gradient(135deg, #00F0FF 0%, #38BDF8 35%, #818CF8 75%, #A855F7 100%)"
+                  : "linear-gradient(135deg, #0284C7 0%, #2563EB 50%, #7C3AED 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                color: cyan, // Critical fallback so text is ALWAYS legible if webkit clip is disabled
+              }}
+            >
+              Expose what others miss.
+            </span>
           </h1>
 
-          {/* Supporting Description */}
+          {/* ── Supporting Copy ────────────────────────────────────────────── */}
           <p
             style={{
-              margin: "0 0 32px 0",
+              margin: "0 auto 32px auto",
               fontSize: "17px",
               lineHeight: 1.6,
               color: textSecondary,
-              maxWidth: "720px",
-              marginLeft: "auto",
-              marginRight: "auto",
+              maxWidth: "740px",
             }}
           >
-            An architecture-agnostic repository integrity agent that uncovers
-            security vulnerabilities, missing implementations, architectural
-            inconsistencies and hidden engineering debt.
+            TraceGuard is an architecture-agnostic repository intelligence agent that discovers security
+            vulnerabilities, missing implementations, architectural inconsistencies and hidden engineering debt.
           </p>
 
-          {/* Call to Actions */}
+          {/* ── CTAs & Actions ─────────────────────────────────────────────── */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "16px",
+              gap: "14px",
               flexWrap: "wrap",
-              marginBottom: "20px",
+              marginBottom: "32px",
             }}
           >
-            {/* Primary CTA – shimmer */}
+            {/* Primary CTA */}
             <button
               onClick={onStartAudit}
               onMouseEnter={() => setCtaHovered(true)}
@@ -406,244 +394,241 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "10px",
-                padding: "14px 32px",
-                borderRadius: "14px",
-                fontSize: "16px",
+                padding: "13px 30px",
+                borderRadius: "12px",
+                fontSize: "15px",
                 fontWeight: 700,
-                color: "#ffffff",
-                background:
-                  "linear-gradient(90deg, #0284c7 0%, #38bdf8 40%, #a855f7 70%, #0284c7 100%)",
-                backgroundSize: "200% 100%",
+                color: "#FFFFFF",
+                background: darkMode
+                  ? "linear-gradient(135deg, #00B4D8 0%, #0077B6 50%, #7209B7 100%)"
+                  : "linear-gradient(135deg, #0284C7 0%, #2563EB 100%)",
                 border: "none",
                 cursor: "pointer",
                 boxShadow: ctaHovered
-                  ? `0 8px 32px ${cyan}88`
-                  : `0 6px 24px ${cyan}55`,
-                animation: "shimmer 2.8s linear infinite",
-                transform: ctaHovered ? "scale(1.04)" : "scale(1)",
-                transition: "box-shadow 0.2s ease, transform 0.2s ease",
+                  ? `0 10px 28px ${cyan}66`
+                  : `0 6px 20px ${cyan}44`,
+                transform: ctaHovered ? "translateY(-1.5px)" : "none",
+                transition: "all 0.18s ease",
               }}
             >
-              <span>Start a Repository Audit</span>
-              <ArrowRight size={18} />
+              <span>Launch Repository Audit</span>
+              <ArrowRight size={17} />
             </button>
 
-            {/* View History */}
+            {/* Secondary CTA */}
             <button
-              onClick={onViewHistory}
+              onClick={handleScrollToCapabilities}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                padding: "13px 24px",
-                borderRadius: "14px",
-                fontSize: "14px",
+                padding: "13px 22px",
+                borderRadius: "12px",
+                fontSize: "14.5px",
                 fontWeight: 600,
                 color: textPrimary,
-                background: darkMode
-                  ? "rgba(15,23,42,0.7)"
-                  : "rgba(241,245,249,0.9)",
-                border: darkMode
-                  ? "1px solid rgba(255,255,255,0.12)"
-                  : "1px solid rgba(0,0,0,0.12)",
+                background: darkMode ? "rgba(16, 26, 43, 0.75)" : "rgba(241, 245, 249, 0.9)",
+                border: `1px solid ${borderSubtle}`,
                 cursor: "pointer",
-                transition: "all 0.15s ease",
+                transition: "all 0.18s ease",
               }}
             >
-              <History size={16} color={purple} />
-              <span>Audit History</span>
-              {totalAuditsCount !== undefined && totalAuditsCount > 0 && (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    padding: "1px 7px",
-                    borderRadius: "9999px",
-                    background: `${purple}25`,
-                    color: purple,
-                    fontWeight: 700,
-                  }}
-                >
-                  {totalAuditsCount}
-                </span>
-              )}
-            </button>
-
-            {/* Explore */}
-            <button
-              onClick={onExploreCapabilities}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "13px 20px",
-                borderRadius: "14px",
-                fontSize: "14px",
-                fontWeight: 600,
-                color: cyan,
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <Sparkles size={16} />
               <span>Explore Capabilities</span>
+              <ChevronRight size={16} color={cyan} />
             </button>
-          </div>
 
-          {/* ── Stats counter row ─────────────────────────────────────── */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "20px",
-              flexWrap: "wrap",
-              marginBottom: "28px",
-            }}
-          >
-            {[
-              "57 Tests Passing",
-              "9 Benchmark Repositories",
-              "v1.0.0 Release",
-            ].map((label, i) => (
-              <span
-                key={label}
+            {/* Audit History Pill */}
+            {totalAuditsCount > 0 && (
+              <button
+                onClick={onViewHistory}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "7px",
-                  fontSize: "12px",
+                  padding: "13px 20px",
+                  borderRadius: "12px",
+                  fontSize: "14px",
                   fontWeight: 600,
                   color: textSecondary,
+                  background: darkMode ? "rgba(16, 26, 43, 0.5)" : "rgba(241, 245, 249, 0.7)",
+                  border: `1px solid ${borderSubtle}`,
+                  cursor: "pointer",
+                  transition: "all 0.18s ease",
                 }}
               >
-                <span
-                  style={{
-                    width: "7px",
-                    height: "7px",
-                    borderRadius: "50%",
-                    background: emerald,
-                    display: "inline-block",
-                    animation: "pulse-dot 2s ease-in-out infinite",
-                    animationDelay: `${i * 0.4}s`,
-                    boxShadow: `0 0 6px ${emerald}`,
-                  }}
-                />
-                {label}
-              </span>
-            ))}
+                <History size={15} color={purple} />
+                <span>Audit History ({totalAuditsCount})</span>
+              </button>
+            )}
           </div>
 
-          {/* Trust indicator bar */}
+          {/* ── Verified Product Statistics Bar ────────────────────────────── */}
           <div
             style={{
-              paddingTop: "20px",
-              borderTop: darkMode
-                ? "1px solid rgba(255,255,255,0.07)"
-                : "1px solid rgba(0,0,0,0.07)",
-              fontSize: "12px",
-              color: textMuted,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "24px",
-              flexWrap: "wrap",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "14px",
+              padding: "14px 18px",
+              borderRadius: "14px",
+              background: darkMode ? "rgba(7, 11, 20, 0.65)" : "rgba(248, 250, 252, 0.9)",
+              border: `1px solid ${borderSubtle}`,
+              marginBottom: "28px",
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <CheckCircle2 size={14} color={emerald} /> Static Tree-sitter &amp; AST Analysis
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <CheckCircle2 size={14} color={emerald} /> Evidence-Linked Graph Findings
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <CheckCircle2 size={14} color={emerald} /> Strict Read-Only Repository Inspection
-            </span>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: cyan }}>9</div>
+              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
+                Benchmark Repositories
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: emerald }}>62</div>
+              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
+                Passing Automated Tests
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: purple }}>4</div>
+              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
+                Analysis Dimensions
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: blue }}>7</div>
+              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
+                Dashboard Sections
+              </div>
+            </div>
+          </div>
+
+          {/* ── Trust Indicators ───────────────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "24px",
+              flexWrap: "wrap",
+              fontSize: "12px",
+              color: textMuted,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <CheckCircle2 size={14} color={emerald} />
+              <span>Static AST &amp; Tree-sitter Analysis</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <CheckCircle2 size={14} color={cyan} />
+              <span>Evidence-Linked Repository Graph</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <Lock size={13} color={purple} />
+              <span>Strict Read-Only Target Inspection</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── 4 Feature Preview Cards ─────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "18px",
-        }}
-      >
-        {capabilities.map((c, i) => {
-          const isHovered = hoveredCard === c.label;
-          return (
+      {/* ── Section: Refined 4 Core Intelligence Capabilities ───────────────── */}
+      <div ref={capabilitiesRef} style={{ marginTop: "36px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "18px" }}>
+          <div>
+            <div style={{ fontSize: "11.5px", fontWeight: 800, color: cyan, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>
+              Platform Pillars
+            </div>
+            <h2 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary, margin: 0 }}>
+              Continuous Repository Integrity Intelligence
+            </h2>
+          </div>
+          <button
+            onClick={onStartAudit}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: cyan,
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <span>Start Audit Workspace</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "18px",
+          }}
+        >
+          {capabilities.map((c) => (
             <div
-              key={c.label}
-              onMouseEnter={() => setHoveredCard(c.label)}
-              onMouseLeave={() => setHoveredCard(null)}
+              key={c.id}
               style={{
                 borderRadius: "16px",
-                background: darkMode
-                  ? "rgba(15,23,42,0.75)"
-                  : "rgba(255,255,255,0.88)",
-                border: isHovered
-                  ? `1px solid ${c.color}66`
-                  : darkMode
-                  ? "1px solid rgba(255,255,255,0.07)"
-                  : "1px solid rgba(0,0,0,0.07)",
-                backdropFilter: "blur(16px)",
+                background: cardBg,
+                border: `1px solid ${borderSubtle}`,
                 padding: "24px",
-                boxShadow: isHovered
-                  ? darkMode
-                    ? `0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px ${c.color}44`
-                    : `0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px ${c.color}33`
-                  : darkMode
-                  ? "0 4px 20px rgba(0,0,0,0.2)"
-                  : "0 2px 12px rgba(0,0,0,0.04)",
-                transform: isHovered ? "scale(1.03)" : "scale(1)",
-                transition:
-                  "transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease",
-                animation: "card-in 0.5s ease both",
-                animationDelay: `${i * 0.1}s`,
-                cursor: "default",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                transition: "all 0.18s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = borderHover;
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = borderSubtle;
+                e.currentTarget.style.transform = "none";
               }}
             >
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "10px",
-                  background: c.bg,
-                  border: `1px solid ${c.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "14px",
-                  boxShadow: isHovered ? `0 0 12px ${c.color}55` : "none",
-                  transition: "box-shadow 0.22s ease",
-                }}
-              >
-                {c.icon}
-              </div>
-              <div
-                style={{
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  color: textPrimary,
-                  marginBottom: "8px",
-                }}
-              >
-                {c.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "13px",
-                  lineHeight: 1.5,
-                  color: textSecondary,
-                }}
-              >
-                {c.desc}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "10px",
+                      background: c.bg,
+                      border: `1px solid ${c.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {c.icon}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "10.5px",
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: c.bg,
+                      color: c.color,
+                      border: `1px solid ${c.border}`,
+                    }}
+                  >
+                    {c.tag}
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: textPrimary, margin: "0 0 8px 0" }}>
+                  {c.title}
+                </h3>
+                <p style={{ fontSize: "13px", color: textSecondary, lineHeight: 1.55, margin: 0 }}>
+                  {c.desc}
+                </p>
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );

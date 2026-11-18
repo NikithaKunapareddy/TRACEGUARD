@@ -497,6 +497,8 @@ export const App: React.FC = () => {
                   edges={graphEdges}
                   findings={findings}
                   onSelectNode={() => setActiveDashboardTab("findings")}
+                  darkMode={darkMode}
+                  auditId={currentAuditId || undefined}
                 />
               )}
             </div>
