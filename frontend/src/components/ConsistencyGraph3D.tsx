@@ -60,12 +60,12 @@ interface NodeVisualMeta {
   ring?: boolean;
 }
 
-function getNodeStyle(node: GraphNode): NodeVisualMeta {
+function getNodeStyle(node: GraphNode, isDark: boolean = true): NodeVisualMeta {
   const k = (node.kind || "").toLowerCase();
   const name = (node.name || "").toLowerCase();
   const file = (node.file || "").toLowerCase();
 
-  // 1. Security Vulnerability / Defect (Rose Red)
+  // 1. Security Vulnerability / Defect (Rose Red in Dark, Crimson in Light)
   if (
     node.finding?.category === "security" ||
     k.includes("vuln") ||
@@ -76,17 +76,17 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     k.includes("finding")
   ) {
     return {
-      color: 0xf43f5e,
-      hex: "#f43f5e",
+      color: isDark ? 0xf43f5e : 0xdc2626,
+      hex: isDark ? "#f43f5e" : "#dc2626",
       label: "Security Defect",
       category: "security",
-      radius: 3.0,
+      radius: 3.2,
       geo: "dodecahedron",
       halo: true,
     };
   }
 
-  // 2. Negative-Space Gap / Missing Implementation (Neon Orange)
+  // 2. Negative-Space Gap / Missing Implementation (Neon Orange in Dark, Bold Orange in Light)
   if (
     node.finding?.category === "gap" ||
     k.includes("gap") ||
@@ -96,17 +96,17 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     name.includes("unimplemented")
   ) {
     return {
-      color: 0xf97316,
-      hex: "#f97316",
+      color: isDark ? 0xf97316 : 0xea580c,
+      hex: isDark ? "#f97316" : "#ea580c",
       label: "Negative-Space Gap",
       category: "gap",
-      radius: 2.8,
+      radius: 3.0,
       geo: "tetrahedron",
       halo: true,
     };
   }
 
-  // 3. API Route / Endpoint (Electric Cyan)
+  // 3. API Route / Endpoint (Electric Cyan in Dark, Rich Azure in Light)
   if (
     k === "endpoint" ||
     k.includes("route") ||
@@ -121,11 +121,11 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     name.includes("service")
   ) {
     return {
-      color: 0x00f0ff,
-      hex: "#00f0ff",
+      color: isDark ? 0x00f0ff : 0x0284c7,
+      hex: isDark ? "#00f0ff" : "#0284c7",
       label: "API Endpoint",
       category: "endpoint",
-      radius: 2.6,
+      radius: 2.8,
       geo: "sphere",
       ring: true,
     };
@@ -147,40 +147,40 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     name.includes("pool")
   ) {
     return {
-      color: 0x10b981,
-      hex: "#10b981",
+      color: isDark ? 0x10b981 : 0x059669,
+      hex: isDark ? "#10b981" : "#059669",
       label: "DB Model / Entity",
       category: "model",
-      radius: 2.6,
+      radius: 2.8,
       geo: "box",
     };
   }
 
-  // 5. Interface / Contract / Type (Bright Turquoise)
+  // 5. Interface / Contract / Type (Turquoise in Dark, Deep Teal in Light)
   if (k.includes("interface") || k.includes("type") || k.includes("contract")) {
     return {
-      color: 0x06b6d4,
-      hex: "#06b6d4",
+      color: isDark ? 0x06b6d4 : 0x0891b2,
+      hex: isDark ? "#06b6d4" : "#0891b2",
       label: "Interface / Contract",
       category: "interface",
-      radius: 2.4,
+      radius: 2.6,
       geo: "icosahedron",
     };
   }
 
-  // 6. Config / Environment (Cyber Amber Gold)
+  // 6. Config / Environment (Amber Gold in Dark, Warm Ochre in Light)
   if (k.includes("config") || k.includes("env") || file.includes(".env") || name.includes("config")) {
     return {
-      color: 0xf59e0b,
-      hex: "#f59e0b",
+      color: isDark ? 0xf59e0b : 0xd97706,
+      hex: isDark ? "#f59e0b" : "#d97706",
       label: "Config / Env",
       category: "config",
-      radius: 2.3,
+      radius: 2.5,
       geo: "cylinder",
     };
   }
 
-  // 7. Function / Controller / Handler / Service (Vivid Violet)
+  // 7. Function / Controller / Handler / Service (Electric Violet in Dark, Royal Purple in Light)
   if (
     name.includes("controller") ||
     name.includes("handler") ||
@@ -191,34 +191,34 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     k === "guard"
   ) {
     return {
-      color: 0xa855f7,
-      hex: "#a855f7",
+      color: isDark ? 0xa855f7 : 0x7c3aed,
+      hex: isDark ? "#a855f7" : "#7c3aed",
       label: "Function / Controller",
       category: "function",
-      radius: 2.3,
+      radius: 2.5,
       geo: "octahedron",
     };
   }
 
-  // 8. Module / Package / File (Indigo)
+  // 8. Module / Package / File (Indigo in Dark, Deep Indigo in Light)
   if (k === "file" || k === "module" || k === "package") {
     return {
-      color: 0x6366f1,
-      hex: "#6366f1",
+      color: isDark ? 0x6366f1 : 0x4338ca,
+      hex: isDark ? "#6366f1" : "#4338ca",
       label: "Module / File",
       category: "module",
-      radius: 2.1,
+      radius: 2.3,
       geo: "dodecahedron",
     };
   }
 
-  // Default fallback (Cyan)
+  // Default fallback (Cyan in Dark, Royal Cobalt in Light)
   return {
-    color: 0x38bdf8,
-    hex: "#38bdf8",
+    color: isDark ? 0x38bdf8 : 0x2563eb,
+    hex: isDark ? "#38bdf8" : "#2563eb",
     label: "Component",
     category: "default",
-    radius: 2.2,
+    radius: 2.4,
     geo: "sphere",
   };
 }
@@ -355,7 +355,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: allNodes.length, security: 0, endpoint: 0, model: 0, function: 0, config: 0 };
     allNodes.forEach((n) => {
-      const s = getNodeStyle(n);
+      const s = getNodeStyle(n, darkMode);
       if (s.category === "security" || s.category === "gap") counts.security = (counts.security || 0) + 1;
       if (s.category === "endpoint") counts.endpoint = (counts.endpoint || 0) + 1;
       if (s.category === "model") counts.model = (counts.model || 0) + 1;
@@ -363,7 +363,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       if (s.category === "config") counts.config = (counts.config || 0) + 1;
     });
     return counts;
-  }, [allNodes]);
+  }, [allNodes, darkMode]);
 
   // ─── 3. Three.js Scene Setup ────────────────────────────────────────────────
   useEffect(() => {
@@ -373,12 +373,13 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
     const width = container.clientWidth || 900;
     const height = container.clientHeight || 580;
 
-    // A. Scene & Camera
+    // A. Scene & Camera - Dead Center at (0, 0, 95) looking directly at (0, 0, 0)
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 1000);
-    camera.position.set(0, 25, 95);
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 95);
+    camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     // B. WebGL Renderer
@@ -390,46 +391,64 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
     container.appendChild(renderer.domElement);
 
     // C. Dynamic Studio Lights - Balanced so all node pigments shine vibrantly
-    const ambientLight = new THREE.AmbientLight(0xffffff, darkMode ? 1.0 : 1.25);
+    const ambientLight = new THREE.AmbientLight(0xffffff, darkMode ? 1.0 : 1.35);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, darkMode ? 1.2 : 1.4);
+    const keyLight = new THREE.DirectionalLight(0xffffff, darkMode ? 1.2 : 1.5);
     keyLight.position.set(60, 80, 80);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, darkMode ? 0.6 : 0.8);
+    const fillLight = new THREE.DirectionalLight(0xffffff, darkMode ? 0.6 : 0.85);
     fillLight.position.set(-60, -40, -60);
     scene.add(fillLight);
 
-    const cyanPoint = new THREE.PointLight(0x00f0ff, 1.2, 220);
+    const cyanPoint = new THREE.PointLight(darkMode ? 0x00f0ff : 0x0284c7, 1.2, 220);
     cyanPoint.position.set(40, 50, 40);
     scene.add(cyanPoint);
 
-    const purplePoint = new THREE.PointLight(0xa855f7, 1.2, 220);
+    const purplePoint = new THREE.PointLight(darkMode ? 0xa855f7 : 0x7c3aed, 1.2, 220);
     purplePoint.position.set(-40, -40, -30);
     scene.add(purplePoint);
 
-    // D. Sci-Fi Starfield / High-Tech Grid Particle Cloud
-    const starCount = darkMode ? 400 : 250;
-    const starGeo = new THREE.BufferGeometry();
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i += 3) {
-      starPositions[i] = (Math.random() - 0.5) * 320;
-      starPositions[i + 1] = (Math.random() - 0.5) * 320;
-      starPositions[i + 2] = (Math.random() - 0.5) * 320;
+    // D. Architectural Floor Grid & Spatial Horizon (CAD Blueprint aesthetic)
+    const gridHelper = new THREE.GridHelper(
+      140,
+      28,
+      darkMode ? 0x00f0ff : 0x0284c7,
+      darkMode ? 0x1e293b : 0xcbd5e1
+    );
+    gridHelper.position.set(0, -42, 0);
+    if (gridHelper.material instanceof THREE.Material) {
+      gridHelper.material.transparent = true;
+      gridHelper.material.opacity = darkMode ? 0.28 : 0.75;
     }
-    starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-    const starMat = new THREE.PointsMaterial({
-      color: darkMode ? 0x38bdf8 : 0x0284c7,
-      size: darkMode ? 1.4 : 1.1,
-      transparent: true,
-      opacity: darkMode ? 0.45 : 0.25,
-    });
-    const starField = new THREE.Points(starGeo, starMat);
-    scene.add(starField);
+    scene.add(gridHelper);
 
-    // E. 3D Node Mesh Group
+    // E. Sci-Fi Starfield (Dark Mode only - keeps Light Mode clean and crisp)
+    let starField: THREE.Points | null = null;
+    if (darkMode) {
+      const starCount = 350;
+      const starGeo = new THREE.BufferGeometry();
+      const starPositions = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount * 3; i += 3) {
+        starPositions[i] = (Math.random() - 0.5) * 320;
+        starPositions[i + 1] = (Math.random() - 0.5) * 320;
+        starPositions[i + 2] = (Math.random() - 0.5) * 320;
+      }
+      starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+      const starMat = new THREE.PointsMaterial({
+        color: 0x38bdf8,
+        size: 1.4,
+        transparent: true,
+        opacity: 0.45,
+      });
+      starField = new THREE.Points(starGeo, starMat);
+      scene.add(starField);
+    }
+
+    // F. 3D Node Mesh Group (Centered mathematically around (0, 0, 0))
     const nodeGroup = new THREE.Group();
+    nodeGroup.position.set(0, 0, 0);
     scene.add(nodeGroup);
     nodeMeshesRef.current.clear();
 
@@ -446,8 +465,17 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       const z = sphereRadius * Math.cos(phi);
       const pos = new THREE.Vector3(x, y, z);
       nodeCoords.set(node.id, pos);
+    });
 
-      const style = getNodeStyle(node);
+    // Compute exact centroid and recenter all nodes to dead-center (0, 0, 0)
+    const centroid = new THREE.Vector3(0, 0, 0);
+    nodeCoords.forEach((p) => centroid.add(p));
+    if (total > 0) centroid.divideScalar(total);
+    nodeCoords.forEach((p) => p.sub(centroid));
+
+    allNodes.forEach((node) => {
+      const pos = nodeCoords.get(node.id) || new THREE.Vector3(0, 0, 0);
+      const style = getNodeStyle(node, darkMode);
       const isFilteredOut = !filteredNodes.some((fn) => fn.id === node.id);
 
       // Node Geometry based on style.geo
@@ -480,9 +508,9 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       const material = new THREE.MeshStandardMaterial({
         color: style.color,
         emissive: style.color,
-        emissiveIntensity: isFilteredOut ? 0.05 : 0.35,
-        roughness: 0.25,
-        metalness: 0.1,
+        emissiveIntensity: isFilteredOut ? 0.04 : darkMode ? 0.35 : 0.14,
+        roughness: darkMode ? 0.25 : 0.35,
+        metalness: darkMode ? 0.1 : 0.05,
         transparent: isFilteredOut,
         opacity: isFilteredOut ? 0.2 : 1.0,
       });
@@ -493,6 +521,19 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       nodeGroup.add(mesh);
       nodeMeshesRef.current.set(node.id, mesh);
 
+      // In Light Mode, add crisp wireframe contour for razor-sharp edge definition
+      if (!darkMode && !isFilteredOut) {
+        const contourMat = new THREE.MeshBasicMaterial({
+          color: 0x0f172a,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.18,
+        });
+        const contourMesh = new THREE.Mesh(geometry, contourMat);
+        contourMesh.scale.set(1.025, 1.025, 1.025);
+        mesh.add(contourMesh);
+      }
+
       // Pulsing Outer Alarm Sphere for Security Defect / Gaps
       if (style.halo && !isFilteredOut) {
         const alarmGeo = new THREE.SphereGeometry(style.radius * 1.55, 16, 16);
@@ -500,7 +541,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
           color: style.color,
           wireframe: true,
           transparent: true,
-          opacity: 0.35,
+          opacity: darkMode ? 0.35 : 0.5,
         });
         const alarmMesh = new THREE.Mesh(alarmGeo, alarmMat);
         mesh.add(alarmMesh);
@@ -508,11 +549,11 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
 
       // Orbital Rings for Endpoints / APIs
       if (style.ring && !isFilteredOut) {
-        const ringGeo = new THREE.TorusGeometry(style.radius * 1.45, 0.12, 8, 32);
+        const ringGeo = new THREE.TorusGeometry(style.radius * 1.45, 0.14, 8, 32);
         const ringMat = new THREE.MeshBasicMaterial({
           color: style.color,
           transparent: true,
-          opacity: 0.45,
+          opacity: darkMode ? 0.45 : 0.65,
         });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.rotation.x = Math.PI / 2;
@@ -520,8 +561,9 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       }
     });
 
-    // F. Edges & Dataflow Beams
+    // G. Edges & Dataflow Beams (Bold and crisp in both themes)
     const edgeGroup = new THREE.Group();
+    edgeGroup.position.set(0, 0, 0);
     scene.add(edgeGroup);
 
     allEdges.forEach((edge) => {
@@ -529,21 +571,26 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       const p2 = nodeCoords.get(edge.target);
       if (p1 && p2) {
         const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-        const isDefectEdge = edge.color === 0xf43f5e || edge.color === 0xf97316;
+        const isDefectEdge =
+          edge.color === 0xf43f5e ||
+          edge.color === 0xdc2626 ||
+          edge.color === 0xf97316 ||
+          edge.color === 0xea580c;
+        const defaultEdgeColor = darkMode ? 0x38bdf8 : 0x2563eb;
         const lineMat = new THREE.LineBasicMaterial({
-          color: edge.color || 0x38bdf8,
+          color: edge.color || defaultEdgeColor,
           transparent: true,
-          opacity: isDefectEdge ? 0.75 : 0.35,
+          opacity: isDefectEdge ? 0.85 : darkMode ? 0.35 : 0.65,
         });
         const line = new THREE.Line(lineGeo, lineMat);
         edgeGroup.add(line);
       }
     });
 
-    // G. Traveling Photon Energy Particles (Living Neural Network)
+    // H. Traveling Photon Energy Particles (Living Neural Network)
     const photonCount = Math.min(30, allEdges.length);
-    const photonGeo = new THREE.SphereGeometry(0.55, 8, 8);
-    const photonMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    const photonGeo = new THREE.SphereGeometry(darkMode ? 0.55 : 0.75, 8, 8);
+    const photonMat = new THREE.MeshBasicMaterial({ color: darkMode ? 0x00f0ff : 0x1d4ed8 });
     const photons: Array<{ mesh: THREE.Mesh; p1: THREE.Vector3; p2: THREE.Vector3; progress: number; speed: number }> = [];
 
     allEdges.slice(0, photonCount).forEach((edge, i) => {
@@ -556,7 +603,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
           mesh: pMesh,
           p1,
           p2,
-          progress: (i / photonCount),
+          progress: i / photonCount,
           speed: 0.006 + Math.random() * 0.008,
         });
       }
@@ -661,7 +708,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       if (autoRotate && !isDragging) {
         nodeGroup.rotation.y += 0.0022;
         edgeGroup.rotation.y += 0.0022;
-        starField.rotation.y += 0.0006;
+        if (starField) starField.rotation.y += 0.0006;
       }
 
       // Animate child meshes (halo rotation & breathing pulse)
@@ -712,7 +759,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
 
   const handleResetCamera = () => {
     if (cameraRef.current) {
-      cameraRef.current.position.set(0, 25, 95);
+      cameraRef.current.position.set(0, 0, 95);
       cameraRef.current.lookAt(0, 0, 0);
     }
   };
@@ -740,13 +787,17 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
         height: "580px",
         borderRadius: "18px",
         overflow: "hidden",
-        border: darkMode ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(0, 0, 0, 0.12)",
+        border: darkMode ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid #cbd5e1",
         background: darkMode
-          ? "radial-gradient(circle at center, #0b1329 0%, #030712 100%)"
-          : "radial-gradient(circle at center, #f8fafc 0%, #e2e8f0 100%)",
+          ? "radial-gradient(circle at 50% 50%, #0d1838 0%, #050914 100%)"
+          : "radial-gradient(circle at 50% 45%, #ffffff 0%, #f1f5f9 65%, #e2e8f0 100%)",
+        backgroundImage: !darkMode
+          ? "radial-gradient(circle, rgba(2, 132, 199, 0.08) 1.2px, transparent 1.2px)"
+          : undefined,
+        backgroundSize: !darkMode ? "28px 28px" : undefined,
         boxShadow: darkMode
           ? "0 20px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08)"
-          : "0 10px 30px rgba(0, 0, 0, 0.08)",
+          : "0 10px 30px rgba(15, 23, 42, 0.08)",
       }}
     >
       {/* Three.js Canvas Mount */}
@@ -772,18 +823,18 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
           {/* Title Pill */}
           <div
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.88)" : "rgba(255, 255, 255, 0.9)",
+              background: darkMode ? "rgba(15, 23, 42, 0.88)" : "#ffffff",
               backdropFilter: "blur(14px)",
-              border: darkMode ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(0, 0, 0, 0.12)",
+              border: darkMode ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid #cbd5e1",
               padding: "8px 14px",
               borderRadius: "10px",
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+              boxShadow: darkMode ? "0 4px 14px rgba(0,0,0,0.2)" : "0 4px 14px rgba(15, 23, 42, 0.08)",
             }}
           >
-            <Globe2 size={16} color="#00f0ff" />
+            <Globe2 size={16} color={darkMode ? "#00f0ff" : "#0284c7"} />
             <span style={{ fontSize: "13px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
               ERCG 3D Consistency Map
             </span>
@@ -792,8 +843,8 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
                 fontSize: "11px",
                 padding: "2px 8px",
                 borderRadius: "9999px",
-                background: "rgba(0, 240, 255, 0.15)",
-                color: "#00f0ff",
+                background: darkMode ? "rgba(0, 240, 255, 0.15)" : "rgba(2, 132, 199, 0.12)",
+                color: darkMode ? "#00f0ff" : "#0284c7",
                 fontWeight: 700,
               }}
             >
@@ -807,20 +858,21 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)",
+              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
               backdropFilter: "blur(14px)",
               padding: "4px 8px",
               borderRadius: "10px",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
+              boxShadow: darkMode ? "none" : "0 4px 14px rgba(15, 23, 42, 0.06)",
             }}
           >
             {[
-              { id: "all", label: "All", count: categoryCounts.all, color: "#38bdf8" },
-              { id: "security", label: "Defects & Gaps", count: categoryCounts.security, color: "#f43f5e" },
-              { id: "endpoint", label: "Endpoints", count: categoryCounts.endpoint, color: "#00f0ff" },
-              { id: "model", label: "Models", count: categoryCounts.model, color: "#10b981" },
-              { id: "function", label: "Functions", count: categoryCounts.function, color: "#a855f7" },
-              { id: "config", label: "Config", count: categoryCounts.config, color: "#f59e0b" },
+              { id: "all", label: "All", count: categoryCounts.all, color: darkMode ? "#38bdf8" : "#0284c7" },
+              { id: "security", label: "Defects & Gaps", count: categoryCounts.security, color: darkMode ? "#f43f5e" : "#dc2626" },
+              { id: "endpoint", label: "Endpoints", count: categoryCounts.endpoint, color: darkMode ? "#00f0ff" : "#0284c7" },
+              { id: "model", label: "Models", count: categoryCounts.model, color: darkMode ? "#10b981" : "#059669" },
+              { id: "function", label: "Functions", count: categoryCounts.function, color: darkMode ? "#a855f7" : "#7c3aed" },
+              { id: "config", label: "Config", count: categoryCounts.config, color: darkMode ? "#f59e0b" : "#d97706" },
             ].map((cat) => {
               const active = activeCategory === cat.id;
               return (
@@ -830,11 +882,11 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
                   style={{
                     background: active ? `${cat.color}25` : "transparent",
                     border: active ? `1.5px solid ${cat.color}` : "1px solid transparent",
-                    color: active ? cat.color : darkMode ? "#94a3b8" : "#64748b",
+                    color: active ? cat.color : darkMode ? "#94a3b8" : "#475569",
                     padding: "4px 10px",
                     borderRadius: "8px",
                     fontSize: "11.5px",
-                    fontWeight: active ? 700 : 500,
+                    fontWeight: active ? 700 : 600,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -855,8 +907,14 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
           <button
             onClick={() => setAutoRotate(!autoRotate)}
             style={{
-              background: autoRotate ? "rgba(56, 189, 248, 0.2)" : darkMode ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)",
-              border: "1px solid rgba(56, 189, 248, 0.4)",
+              background: autoRotate
+                ? darkMode
+                  ? "rgba(56, 189, 248, 0.2)"
+                  : "rgba(2, 132, 199, 0.15)"
+                : darkMode
+                ? "rgba(15, 23, 42, 0.85)"
+                : "#ffffff",
+              border: darkMode ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid #cbd5e1",
               color: darkMode ? "#f8fafc" : "#0f172a",
               borderRadius: "8px",
               padding: "7px 12px",
@@ -867,9 +925,14 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
               fontSize: "12px",
               fontWeight: 600,
               backdropFilter: "blur(12px)",
+              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
-            {autoRotate ? <Pause size={13} color="#00f0ff" /> : <Play size={13} color="#00f0ff" />}
+            {autoRotate ? (
+              <Pause size={13} color={darkMode ? "#00f0ff" : "#0284c7"} />
+            ) : (
+              <Play size={13} color={darkMode ? "#00f0ff" : "#0284c7"} />
+            )}
             {autoRotate ? "Pause Orbit" : "Resume Orbit"}
           </button>
 
@@ -877,14 +940,15 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
             onClick={handleZoomIn}
             title="Zoom In"
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
-              color: darkMode ? "#94a3b8" : "#475569",
+              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #cbd5e1",
+              color: darkMode ? "#94a3b8" : "#0f172a",
               borderRadius: "8px",
               padding: "7px 9px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
+              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             <ZoomIn size={14} />
@@ -894,14 +958,15 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
             onClick={handleZoomOut}
             title="Zoom Out"
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
-              color: darkMode ? "#94a3b8" : "#475569",
+              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #cbd5e1",
+              color: darkMode ? "#94a3b8" : "#0f172a",
               borderRadius: "8px",
               padding: "7px 9px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
+              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             <ZoomOut size={14} />
@@ -911,9 +976,9 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
             onClick={handleResetCamera}
             title="Reset View"
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
-              color: darkMode ? "#94a3b8" : "#475569",
+              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #cbd5e1",
+              color: darkMode ? "#94a3b8" : "#0f172a",
               borderRadius: "8px",
               padding: "7px 12px",
               cursor: "pointer",
@@ -921,6 +986,8 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
               alignItems: "center",
               gap: "6px",
               fontSize: "12px",
+              fontWeight: 600,
+              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             <RotateCcw size={13} /> Reset
@@ -937,40 +1004,41 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
           display: "flex",
           gap: "14px",
           zIndex: 10,
-          background: darkMode ? "rgba(15, 23, 42, 0.88)" : "rgba(255, 255, 255, 0.92)",
+          background: darkMode ? "rgba(15, 23, 42, 0.88)" : "#ffffff",
           backdropFilter: "blur(14px)",
           padding: "8px 16px",
           borderRadius: "10px",
-          border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+          border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
+          boxShadow: darkMode ? "none" : "0 4px 14px rgba(15, 23, 42, 0.08)",
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#00f0ff", display: "inline-block", boxShadow: "0 0 8px #00f0ff" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#00f0ff" : "#0284c7", display: "inline-block", boxShadow: darkMode ? "0 0 8px #00f0ff" : "none" }} />
           Route / API
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "2px", background: "#10b981", display: "inline-block", boxShadow: "0 0 8px #10b981" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", borderRadius: "2px", background: darkMode ? "#10b981" : "#059669", display: "inline-block", boxShadow: darkMode ? "0 0 8px #10b981" : "none" }} />
           Database Model
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", transform: "rotate(45deg)", background: "#a855f7", display: "inline-block", boxShadow: "0 0 8px #a855f7" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", transform: "rotate(45deg)", background: darkMode ? "#a855f7" : "#7c3aed", display: "inline-block", boxShadow: darkMode ? "0 0 8px #a855f7" : "none" }} />
           Controller / Func
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#06b6d4", display: "inline-block" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#06b6d4" : "#0891b2", display: "inline-block" }} />
           Interface
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f59e0b" : "#d97706", display: "inline-block" }} />
           Config
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f43f5e", display: "inline-block", boxShadow: "0 0 10px #f43f5e" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f43f5e" : "#dc2626", display: "inline-block", boxShadow: darkMode ? "0 0 10px #f43f5e" : "none" }} />
           Security Defect
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: darkMode ? "#94a3b8" : "#475569" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f97316", display: "inline-block", boxShadow: "0 0 8px #f97316" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f97316" : "#ea580c", display: "inline-block", boxShadow: darkMode ? "0 0 8px #f97316" : "none" }} />
           Negative Gap
         </div>
       </div>

@@ -47,7 +47,7 @@ interface NodePos {
 
 // ─── Color Palette (Matches 3D Consistency Map) ────────────────────────────────
 
-const COLOR_MAP: Record<string, { color: string; bg: string; label: string }> = {
+const COLOR_MAP_DARK: Record<string, { color: string; bg: string; label: string }> = {
   endpoint: { color: "#00f0ff", bg: "rgba(0, 240, 255, 0.18)", label: "Endpoint" },
   route: { color: "#38bdf8", bg: "rgba(56, 189, 248, 0.18)", label: "Route" },
   api: { color: "#00f0ff", bg: "rgba(0, 240, 255, 0.18)", label: "API" },
@@ -74,15 +74,43 @@ const COLOR_MAP: Record<string, { color: string; bg: string; label: string }> = 
   default: { color: "#818cf8", bg: "rgba(129, 140, 248, 0.18)", label: "Component" },
 };
 
-function getNodeMeta(kind: string) {
+const COLOR_MAP_LIGHT: Record<string, { color: string; bg: string; label: string }> = {
+  endpoint: { color: "#0284c7", bg: "rgba(2, 132, 199, 0.14)", label: "Endpoint" },
+  route: { color: "#0284c7", bg: "rgba(2, 132, 199, 0.14)", label: "Route" },
+  api: { color: "#0284c7", bg: "rgba(2, 132, 199, 0.14)", label: "API" },
+  api_call: { color: "#0369a1", bg: "rgba(3, 105, 161, 0.14)", label: "Client Call" },
+  model: { color: "#059669", bg: "rgba(5, 150, 105, 0.14)", label: "DB Model" },
+  db_model: { color: "#059669", bg: "rgba(5, 150, 105, 0.14)", label: "DB Model" },
+  table: { color: "#059669", bg: "rgba(5, 150, 105, 0.14)", label: "Table" },
+  class: { color: "#059669", bg: "rgba(5, 150, 105, 0.14)", label: "Class / Struct" },
+  interface: { color: "#0891b2", bg: "rgba(8, 145, 178, 0.14)", label: "Interface" },
+  type: { color: "#0d9488", bg: "rgba(13, 148, 136, 0.14)", label: "Type" },
+  function: { color: "#7c3aed", bg: "rgba(124, 58, 237, 0.14)", label: "Function" },
+  method: { color: "#6d28d9", bg: "rgba(109, 40, 217, 0.14)", label: "Method" },
+  controller: { color: "#7c3aed", bg: "rgba(124, 58, 237, 0.14)", label: "Controller" },
+  handler: { color: "#7c3aed", bg: "rgba(124, 58, 237, 0.14)", label: "Handler" },
+  module: { color: "#1d4ed8", bg: "rgba(29, 78, 216, 0.14)", label: "Module" },
+  package: { color: "#4338ca", bg: "rgba(67, 56, 202, 0.14)", label: "Package" },
+  file: { color: "#4338ca", bg: "rgba(67, 56, 202, 0.14)", label: "File" },
+  config: { color: "#d97706", bg: "rgba(217, 119, 6, 0.14)", label: "Config / Env" },
+  env: { color: "#d97706", bg: "rgba(217, 119, 6, 0.14)", label: "Config" },
+  vulnerability: { color: "#dc2626", bg: "rgba(220, 38, 38, 0.16)", label: "Vulnerability" },
+  security: { color: "#dc2626", bg: "rgba(220, 38, 38, 0.16)", label: "Defect" },
+  defect: { color: "#dc2626", bg: "rgba(220, 38, 38, 0.16)", label: "Defect" },
+  gap: { color: "#ea580c", bg: "rgba(234, 88, 12, 0.16)", label: "Negative Gap" },
+  default: { color: "#2563eb", bg: "rgba(37, 99, 235, 0.14)", label: "Component" },
+};
+
+function getNodeMeta(kind: string, darkMode: boolean = true) {
+  const map = darkMode ? COLOR_MAP_DARK : COLOR_MAP_LIGHT;
   const k = (kind || "").toLowerCase();
-  for (const key of Object.keys(COLOR_MAP)) {
-    if (k.includes(key)) return COLOR_MAP[key];
+  for (const key of Object.keys(map)) {
+    if (k.includes(key)) return map[key];
   }
-  return COLOR_MAP.default;
+  return map.default;
 }
 
-const EDGE_COLORS: Record<string, string> = {
+const EDGE_COLORS_DARK: Record<string, string> = {
   calls: "#38bdf8",
   routes_to: "#00f0ff",
   queries_db: "#10b981",
@@ -94,13 +122,26 @@ const EDGE_COLORS: Record<string, string> = {
   default: "#64748b",
 };
 
-function getEdgeColor(rel?: string) {
-  if (!rel) return EDGE_COLORS.default;
+const EDGE_COLORS_LIGHT: Record<string, string> = {
+  calls: "#2563eb",
+  routes_to: "#0284c7",
+  queries_db: "#059669",
+  imports: "#4338ca",
+  defines: "#7c3aed",
+  implements: "#0891b2",
+  tests: "#d97706",
+  defect: "#dc2626",
+  default: "#334155",
+};
+
+function getEdgeColor(rel?: string, darkMode: boolean = true) {
+  const map = darkMode ? EDGE_COLORS_DARK : EDGE_COLORS_LIGHT;
+  if (!rel) return map.default;
   const r = rel.toLowerCase();
-  for (const k of Object.keys(EDGE_COLORS)) {
-    if (r.includes(k)) return EDGE_COLORS[k];
+  for (const k of Object.keys(map)) {
+    if (r.includes(k)) return map[k];
   }
-  return EDGE_COLORS.default;
+  return map.default;
 }
 
 // ─── Force-Directed Layout Simulation ──────────────────────────────────────────
@@ -556,7 +597,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
 
-    // 1. Draw Starfield in Dark Mode
+    // 1. Draw Starfield in Dark Mode / Architectural Blueprint Grid in Light Mode
     if (darkMode) {
       starsRef.current.forEach((s) => {
         ctx.beginPath();
@@ -564,6 +605,30 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
         ctx.fillStyle = `rgba(56, 189, 248, ${s.alpha})`;
         ctx.fill();
       });
+    } else {
+      // Precision Architectural Blueprint Grid in Light Mode
+      const gridSize = 40;
+      const startX = Math.floor((-pan.x / scale - 200) / gridSize) * gridSize;
+      const endX = Math.ceil((-pan.x / scale + W / scale + 200) / gridSize) * gridSize;
+      const startY = Math.floor((-pan.y / scale - 200) / gridSize) * gridSize;
+      const endY = Math.ceil((-pan.y / scale + H / scale + 200) / gridSize) * gridSize;
+
+      ctx.save();
+      ctx.translate(pan.x, pan.y);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = "rgba(2, 132, 199, 0.08)";
+      ctx.lineWidth = 1 / scale;
+      ctx.beginPath();
+      for (let x = startX; x <= endX; x += gridSize) {
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, endY);
+      }
+      for (let y = startY; y <= endY; y += gridSize) {
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+      }
+      ctx.stroke();
+      ctx.restore();
     }
 
     ctx.save();
@@ -583,7 +648,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       const p1 = positions[si];
       const p2 = positions[ti];
       const isDefect = e.relation === "defect";
-      const edgeColor = isDefect ? "#f43f5e" : getEdgeColor(e.relation);
+      const edgeColor = isDefect ? (darkMode ? "#f43f5e" : "#dc2626") : getEdgeColor(e.relation, darkMode);
       const isConnectedToSelected = selectedNode && (selectedNode.id === e.source || selectedNode.id === e.target);
 
       // Curved control point
@@ -601,11 +666,11 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       ctx.strokeStyle = isConnectedToSelected
         ? edgeColor
         : isDefect
-        ? "rgba(244, 63, 94, 0.7)"
+        ? darkMode ? "rgba(244, 63, 94, 0.75)" : "rgba(220, 38, 38, 0.85)"
         : darkMode
         ? "rgba(100, 116, 139, 0.35)"
-        : "rgba(148, 163, 184, 0.4)";
-      ctx.lineWidth = (isConnectedToSelected ? 2.5 : 1.4) / scale;
+        : "rgba(30, 58, 138, 0.55)";
+      ctx.lineWidth = (isConnectedToSelected ? 2.8 : darkMode ? 1.4 : 1.8) / scale;
       if (isDefect) {
         ctx.setLineDash([4 / scale, 3 / scale]);
       } else {
@@ -620,20 +685,20 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       const py = (1 - t) * (1 - t) * p1.y + 2 * (1 - t) * t * cy + t * t * p2.y;
 
       ctx.beginPath();
-      ctx.arc(px, py, 2.5 / scale, 0, Math.PI * 2);
+      ctx.arc(px, py, 2.8 / scale, 0, Math.PI * 2);
       ctx.fillStyle = edgeColor;
       ctx.shadowColor = edgeColor;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = darkMode ? 8 : 4;
       ctx.fill();
       ctx.shadowBlur = 0;
     });
 
-    // 3. Draw Nodes (High-tech Glowing Component Badges)
+    // 3. Draw Nodes (High-tech Component Badges)
     filteredNodes.forEach((node, i) => {
       const pos = positions[i];
       if (!pos) return;
 
-      const meta = getNodeMeta(node.kind);
+      const meta = getNodeMeta(node.kind, darkMode);
       const isSelected = selectedNode?.id === node.id;
       const isHovered = hoveredIdxRef.current === i;
       const isTargeted = highlightedNodeId && (node.id === highlightedNodeId || (node.file && highlightedNodeId.includes(node.file)));
@@ -650,7 +715,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
         ctx.strokeStyle = meta.color;
         ctx.lineWidth = 2.5 / scale;
         ctx.shadowColor = meta.color;
-        ctx.shadowBlur = isSelected ? 18 : 10;
+        ctx.shadowBlur = isSelected ? (darkMode ? 18 : 12) : 10;
         ctx.stroke();
         ctx.shadowBlur = 0;
       }
@@ -660,7 +725,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = darkMode ? "#0a1124" : "#ffffff";
       ctx.shadowColor = meta.color;
-      ctx.shadowBlur = isSelected || isHovered ? 15 : 6;
+      ctx.shadowBlur = isSelected || isHovered ? (darkMode ? 15 : 10) : (darkMode ? 6 : 4);
       ctx.fill();
       ctx.shadowBlur = 0;
 
@@ -692,7 +757,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
 
       // Subtitle (Kind pill or file name)
       ctx.fillStyle = meta.color;
-      ctx.font = `600 ${8.5 / scale}px 'JetBrains Mono', monospace`;
+      ctx.font = `700 ${8.5 / scale}px 'JetBrains Mono', monospace`;
       ctx.fillText(meta.label.toUpperCase(), pos.x, pos.y + radius + 25 / scale);
     });
 
@@ -848,12 +913,12 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           {/* Filter Pills with Counts */}
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {[
-              { id: "all", label: "All Components", count: allNodes.length },
-              { id: "endpoint", label: "Endpoints", count: categoryCounts.endpoint, color: "#00f0ff" },
-              { id: "function", label: "Functions", count: categoryCounts.function, color: "#a855f7" },
-              { id: "model", label: "DB Models", count: categoryCounts.model, color: "#10b981" },
-              { id: "config", label: "Configs", count: categoryCounts.config, color: "#f59e0b" },
-              { id: "vulnerability", label: "Defects & Gaps", count: categoryCounts.vulnerability, color: "#f43f5e" },
+              { id: "all", label: "All Components", count: allNodes.length, color: darkMode ? "#00f0ff" : "#0284c7" },
+              { id: "endpoint", label: "Endpoints", count: categoryCounts.endpoint, color: darkMode ? "#00f0ff" : "#0284c7" },
+              { id: "function", label: "Functions", count: categoryCounts.function, color: darkMode ? "#a855f7" : "#7c3aed" },
+              { id: "model", label: "DB Models", count: categoryCounts.model, color: darkMode ? "#10b981" : "#059669" },
+              { id: "config", label: "Configs", count: categoryCounts.config, color: darkMode ? "#f59e0b" : "#d97706" },
+              { id: "vulnerability", label: "Defects & Gaps", count: categoryCounts.vulnerability, color: darkMode ? "#f43f5e" : "#dc2626" },
             ].map((k) => {
               const isSelected = kindFilter === k.id;
               return (
