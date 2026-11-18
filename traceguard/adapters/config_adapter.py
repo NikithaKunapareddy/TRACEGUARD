@@ -75,6 +75,8 @@ class ConfigAdapter(BaseParserAdapter):
 
     def _parse_json_file(self, file_meta: FileMetadata, content: str, graph: ERCGraph) -> None:
         rel_path = file_meta.relative_path
+        if file_meta.name.lower() == "ground_truth.json":
+            return
         try:
             data = json.loads(content)
             if isinstance(data, dict):

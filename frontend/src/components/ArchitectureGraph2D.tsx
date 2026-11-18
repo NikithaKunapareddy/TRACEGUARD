@@ -144,96 +144,125 @@ function getEdgeColor(rel?: string, darkMode: boolean = true) {
   return map.default;
 }
 
-// ─── Force-Directed Layout Simulation ──────────────────────────────────────────
+// ─── Deterministic Stratified Architectural Layout (Guaranteed Zero Overlap) ─
+
+function getArchitecturalTier(node: GraphNode): number {
+  const k = (node.kind || "").toLowerCase();
+  const name = (node.name || "").toLowerCase();
+  if (k.includes("vuln") || k.includes("defect") || k.includes("gap") || k.includes("sec")) {
+    return 3; // Tier 3: Findings, Vulnerabilities & Negative-Space Gaps
+  }
+  if (
+    k.includes("model") ||
+    k.includes("db") ||
+    k.includes("table") ||
+    k.includes("class") ||
+    k.includes("struct") ||
+    k.includes("interface") ||
+    k.includes("type") ||
+    k.includes("config") ||
+    k.includes("env")
+  ) {
+    return 2; // Tier 2: Data Models, Interfaces & Config
+  }
+  if (
+    k.includes("function") ||
+    k.includes("method") ||
+    k.includes("controller") ||
+    k.includes("handler") ||
+    name.startsWith("fn:")
+  ) {
+    return 1; // Tier 1: Core Functions, Controllers & Handlers
+  }
+  return 0; // Tier 0: Modules, Files & API Entrypoints
+}
 
 function runForceSimulation(
   nodes: GraphNode[],
   edges: GraphEdge[],
   width: number,
-  height: number,
-  ticks = 240
+  height: number
 ): NodePos[] {
   const count = nodes.length;
-  const positions: NodePos[] = nodes.map((n, i) => {
-    // Arrange initial positions in stratified radial layers
-    const k = (n.kind || "").toLowerCase();
-    let ring = Math.min(width, height) * 0.32;
-    if (k.includes("module") || k.includes("file") || k.includes("package")) ring *= 1.25;
-    else if (k.includes("endpoint") || k.includes("route")) ring *= 0.65;
-    else if (k.includes("model") || k.includes("db")) ring *= 1.1;
-    else if (k.includes("vuln") || k.includes("defect") || k.includes("gap")) ring *= 0.85;
+  if (count === 0) return [];
 
-    const angle = (i / Math.max(1, count)) * Math.PI * 2 + (i % 2) * 0.3;
-    return {
-      x: width / 2 + Math.cos(angle) * ring,
-      y: height / 2 + Math.sin(angle) * ring,
-      vx: 0,
-      vy: 0,
-    };
+  // Group node indices into architectural tiers (0..3)
+  const tiers: number[][] = [[], [], [], []];
+  nodes.forEach((n, idx) => {
+    const t = getArchitecturalTier(n);
+    tiers[t].push(idx);
   });
 
-  const nodeMap = new Map<string, number>();
+  // Split any large tier into balanced sub-columns of at most 5 nodes
+  const MAX_PER_COL = 5;
+  const columns: number[][] = [];
+  tiers.forEach((tierIndices) => {
+    if (tierIndices.length === 0) return;
+    for (let i = 0; i < tierIndices.length; i += MAX_PER_COL) {
+      columns.push(tierIndices.slice(i, i + MAX_PER_COL));
+    }
+  });
+
+  // Guaranteed non-overlapping world-space cell dimensions
+  const COL_SPACING = 245;
+  const ROW_SPACING = 112;
+
+  const totalCols = columns.length;
+  const startX = width / 2 - ((totalCols - 1) * COL_SPACING) / 2;
+
+  const positions: NodePos[] = new Array(count);
+
+  columns.forEach((colIndices, colIdx) => {
+    const rowsInCol = colIndices.length;
+    const colX = startX + colIdx * COL_SPACING;
+    // Slight vertical stagger on alternating columns so horizontal edges never cross through neighbor circles
+    const staggerY = (colIdx % 2 === 1 && rowsInCol > 1) ? 18 : 0;
+    const startY = height / 2 - ((rowsInCol - 1) * ROW_SPACING) / 2 + staggerY;
+
+    colIndices.forEach((nodeIdx, rowIdx) => {
+      positions[nodeIdx] = {
+        x: colX,
+        y: startY + rowIdx * ROW_SPACING,
+        vx: 0,
+        vy: 0,
+      };
+    });
+  });
+
+  // Barycenter vertical ordering pass to minimize edge crossings within each column
+  const idToIdx = new Map<string, number>();
   nodes.forEach((n, i) => {
-    nodeMap.set(n.id, i);
-    nodeMap.set(n.name, i);
-    if (n.file) nodeMap.set(n.file, i);
+    idToIdx.set(n.id, i);
+    idToIdx.set(n.name, i);
   });
 
-  const K_REPULSION = 14000;
-  const K_SPRING = 0.04;
-  const IDEAL_LEN = 130;
-  const DAMPING = 0.82;
-  const GRAVITY = 0.02;
-
-  for (let t = 0; t < ticks; t++) {
-    // Repulsion between all node pairs
-    for (let i = 0; i < count; i++) {
-      for (let j = i + 1; j < count; j++) {
-        const dx = positions[j].x - positions[i].x;
-        const dy = positions[j].y - positions[i].y;
-        const d2 = dx * dx + dy * dy + 1;
-        const dist = Math.sqrt(d2);
-        const force = K_REPULSION / d2;
-        const fx = (force * dx) / dist;
-        const fy = (force * dy) / dist;
-        positions[i].vx -= fx;
-        positions[i].vy -= fy;
-        positions[j].vx += fx;
-        positions[j].vy += fy;
-      }
-    }
-
-    // Spring attraction along edges
-    for (const e of edges) {
-      const si = nodeMap.get(e.source);
-      const ti = nodeMap.get(e.target);
-      if (si === undefined || ti === undefined || si === ti) continue;
-      const dx = positions[ti].x - positions[si].x;
-      const dy = positions[ti].y - positions[si].y;
-      const dist = Math.sqrt(dx * dx + dy * dy) + 0.1;
-      const displacement = dist - IDEAL_LEN;
-      const force = K_SPRING * displacement;
-      const fx = (force * dx) / dist;
-      const fy = (force * dy) / dist;
-      positions[si].vx += fx;
-      positions[si].vy += fy;
-      positions[ti].vx -= fx;
-      positions[ti].vy -= fy;
-    }
-
-    // Pull toward canvas center
-    for (let i = 0; i < count; i++) {
-      positions[i].vx += (width / 2 - positions[i].x) * GRAVITY;
-      positions[i].vy += (height / 2 - positions[i].y) * GRAVITY;
-    }
-
-    // Velocity decay & position update
-    for (let i = 0; i < count; i++) {
-      positions[i].vx *= DAMPING;
-      positions[i].vy *= DAMPING;
-      positions[i].x += positions[i].vx;
-      positions[i].y += positions[i].vy;
-    }
+  for (let pass = 0; pass < 2; pass++) {
+    columns.forEach((colIndices, colIdx) => {
+      if (colIndices.length <= 1) return;
+      const scored = colIndices.map((idx) => {
+        let sumY = positions[idx].y;
+        let weight = 1;
+        edges.forEach((e) => {
+          const si = idToIdx.get(e.source);
+          const ti = idToIdx.get(e.target);
+          if (si === idx && ti !== undefined && positions[ti]) {
+            sumY += positions[ti].y;
+            weight++;
+          } else if (ti === idx && si !== undefined && positions[si]) {
+            sumY += positions[si].y;
+            weight++;
+          }
+        });
+        return { idx, avgY: sumY / weight };
+      });
+      scored.sort((a, b) => a.avgY - b.avgY);
+      const rowsInCol = scored.length;
+      const staggerY = (colIdx % 2 === 1 && rowsInCol > 1) ? 18 : 0;
+      const startY = height / 2 - ((rowsInCol - 1) * ROW_SPACING) / 2 + staggerY;
+      scored.forEach((item, rowIdx) => {
+        positions[item.idx].y = startY + rowIdx * ROW_SPACING;
+      });
+    });
   }
 
   return positions;
@@ -290,10 +319,41 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
   const surface = darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff";
   const cyan = darkMode ? "#00f0ff" : "#0284c7";
 
-  // Build complete enriched graph (includes containment and findings)
+  // Build complete enriched graph (includes containment, clean symbol names, and findings)
   const { allNodes, allEdges } = useMemo(() => {
-    const enrichedNodes: GraphNode[] = [...nodes];
-    const nodeIds = new Set(nodes.map((n) => n.id));
+    const IGNORED_META_KEYS = new Set(["traps_to_reject", "known_defects"]);
+    const enrichedNodes: GraphNode[] = [];
+    const nodeIds = new Set<string>();
+
+    nodes.forEach((rawNode) => {
+      const rawName = (rawNode.name || "").trim();
+      if (IGNORED_META_KEYS.has(rawName.toLowerCase())) return;
+      if (rawNode.file && rawNode.file.toLowerCase().includes("benchmark_metadata")) return;
+
+      let cleanName = rawName;
+      let cleanKind = rawNode.kind || "component";
+
+      if (rawName.startsWith("fn:")) {
+        cleanName = `${rawName.slice(3)}()`;
+        if (!cleanKind || cleanKind === "external" || cleanKind === "component") {
+          cleanKind = "function";
+        }
+      } else if (rawName.startsWith("mod:")) {
+        cleanName = rawName.slice(4);
+        if (!cleanKind || cleanKind === "external" || cleanKind === "component") {
+          cleanKind = "module";
+        }
+      }
+
+      if (!nodeIds.has(rawNode.id)) {
+        nodeIds.add(rawNode.id);
+        enrichedNodes.push({
+          ...rawNode,
+          name: cleanName,
+          kind: cleanKind,
+        });
+      }
+    });
 
     // If backend provided minimal or 0 nodes, generate visual representation
     if (enrichedNodes.length === 0) {
@@ -378,7 +438,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           !k.includes("route") &&
           !k.includes("api") &&
           !name.startsWith("/") &&
-          !name.includes("get") &&
+          !name.includes("get") && !(n.file||"").toLowerCase().includes("rout") && !(n.file||"").toLowerCase().includes("api") &&
           !name.includes("post") &&
           !name.includes("delete") &&
           !name.includes("put") &&
@@ -398,7 +458,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           !name.includes("model") &&
           !name.includes("cache") &&
           !name.includes("store") &&
-          !name.includes("pool")
+          !name.includes("pool") && !(n.file||"").toLowerCase().includes("model") && !(n.file||"").toLowerCase().includes("db") && !(n.file||"").toLowerCase().includes("schema")
         ) {
           return false;
         }
@@ -498,30 +558,12 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
     return allEdges.filter((e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target));
   }, [allEdges, filteredNodeIds]);
 
-  // Simulation run on data change
-  useEffect(() => {
-    const container = containerRef.current;
-    const canvas = canvasRef.current;
-    if (!container || !canvas) return;
-
-    const width = container.clientWidth || 960;
-    const height = 620;
-
-    canvas.width = width * (window.devicePixelRatio || 1);
-    canvas.height = height * (window.devicePixelRatio || 1);
-
-    positionsRef.current = runForceSimulation(filteredNodes, filteredEdges, width, height);
-    panRef.current = { x: 0, y: 0 };
-    scaleRef.current = 1;
-    forceUpdate((v) => v + 1);
-  }, [filteredNodes, filteredEdges]);
-
   // Fit to screen
   const handleFitScreen = useCallback(() => {
-    const container = containerRef.current;
-    if (!container || positionsRef.current.length === 0) return;
-    const W = container.clientWidth || 960;
-    const H = 620;
+    const canvas = canvasRef.current;
+    if (!canvas || positionsRef.current.length === 0) return;
+    const W = canvas.clientWidth || 960;
+    const H = canvas.clientHeight || 540;
 
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     positionsRef.current.forEach((p) => {
@@ -531,17 +573,45 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       if (p.y > maxY) maxY = p.y;
     });
 
-    const rangeX = maxX - minX || 1;
-    const rangeY = maxY - minY || 1;
-    const pad = 80;
-    const sc = Math.min((W - pad * 2) / rangeX, (H - pad * 2) / rangeY, 1.8);
-    scaleRef.current = Math.max(0.4, sc);
+    const rangeX = (maxX - minX) + 220;
+    const rangeY = (maxY - minY) + 140;
+    const sc = Math.min(W / rangeX, H / rangeY, 1.15);
+    scaleRef.current = Math.max(0.45, sc);
     panRef.current = {
       x: W / 2 - ((minX + maxX) / 2) * scaleRef.current,
       y: H / 2 - ((minY + maxY) / 2) * scaleRef.current,
     };
     forceUpdate((v) => v + 1);
   }, []);
+
+  // Simulation run on data change & exact 1:1 aspect ratio sync
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+
+    const updateSizeAndSimulate = (recomputeLayout: boolean) => {
+      const dpr = window.devicePixelRatio || 1;
+      const width = canvas.clientWidth || container.clientWidth || 960;
+      const height = canvas.clientHeight || 540;
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+
+      if (recomputeLayout) {
+        positionsRef.current = runForceSimulation(filteredNodes, filteredEdges, width, height);
+        handleFitScreen();
+      } else {
+        forceUpdate((v) => v + 1);
+      }
+    };
+
+    updateSizeAndSimulate(true);
+
+    const ro = new ResizeObserver(() => updateSizeAndSimulate(false));
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, [filteredNodes, filteredEdges, handleFitScreen]);
 
   // Center on highlighted node
   useEffect(() => {
@@ -639,7 +709,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
     const idMap = new Map<string, number>();
     filteredNodes.forEach((n, i) => idMap.set(n.id, i));
 
-    // 2. Draw Edges with Directional Arrows & Animated Energy Beams
+    // 2. Draw Smooth Cubic S-Curve Edges & Animated Dataflow Pulses (True World Space)
     filteredEdges.forEach((e) => {
       const si = idMap.get(e.source);
       const ti = idMap.get(e.target);
@@ -651,49 +721,53 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       const edgeColor = isDefect ? (darkMode ? "#f43f5e" : "#dc2626") : getEdgeColor(e.relation, darkMode);
       const isConnectedToSelected = selectedNode && (selectedNode.id === e.source || selectedNode.id === e.target);
 
-      // Curved control point
-      const midX = (p1.x + p2.x) / 2;
-      const midY = (p1.y + p2.y) / 2;
       const dx = p2.x - p1.x;
       const dy = p2.y - p1.y;
-      const curvature = 0.15;
-      const cx = midX - dy * curvature;
-      const cy = midY + dx * curvature;
+      const cp1x = p1.x + dx * 0.45;
+      const cp1y = p1.y + (Math.abs(dx) < 30 ? dy * 0.3 : 0);
+      const cp2x = p2.x - dx * 0.45;
+      const cp2y = p2.y - (Math.abs(dx) < 30 ? dy * 0.3 : 0);
 
       ctx.beginPath();
       ctx.moveTo(p1.x, p1.y);
-      ctx.quadraticCurveTo(cx, cy, p2.x, p2.y);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
       ctx.strokeStyle = isConnectedToSelected
         ? edgeColor
         : isDefect
-        ? darkMode ? "rgba(244, 63, 94, 0.75)" : "rgba(220, 38, 38, 0.85)"
+        ? darkMode ? "rgba(244, 63, 94, 0.72)" : "rgba(220, 38, 38, 0.8)"
         : darkMode
-        ? "rgba(100, 116, 139, 0.35)"
-        : "rgba(30, 58, 138, 0.55)";
-      ctx.lineWidth = (isConnectedToSelected ? 2.8 : darkMode ? 1.4 : 1.8) / scale;
+        ? "rgba(148, 163, 184, 0.28)"
+        : "rgba(30, 58, 138, 0.42)";
+      ctx.lineWidth = isConnectedToSelected ? 2.6 : 1.5;
       if (isDefect) {
-        ctx.setLineDash([4 / scale, 3 / scale]);
+        ctx.setLineDash([5, 4]);
       } else {
         ctx.setLineDash([]);
       }
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Draw Animated Pulse (Dancing energy packet along the curve)
-      const t = (animOffset + (si + ti) * 0.15) % 1;
-      const px = (1 - t) * (1 - t) * p1.x + 2 * (1 - t) * t * cx + t * t * p2.x;
-      const py = (1 - t) * (1 - t) * p1.y + 2 * (1 - t) * t * cy + t * t * p2.y;
+      // Animated Pulse along the Cubic Bezier curve
+      const t = (animOffset + (si + ti) * 0.17) % 1;
+      const mt = 1 - t;
+      const px =
+        mt * mt * mt * p1.x +
+        3 * mt * mt * t * cp1x +
+        3 * mt * t * t * cp2x +
+        t * t * t * p2.x;
+      const py =
+        mt * mt * mt * p1.y +
+        3 * mt * mt * t * cp1y +
+        3 * mt * t * t * cp2y +
+        t * t * t * p2.y;
 
       ctx.beginPath();
-      ctx.arc(px, py, 2.8 / scale, 0, Math.PI * 2);
+      ctx.arc(px, py, 2.8, 0, Math.PI * 2);
       ctx.fillStyle = edgeColor;
-      ctx.shadowColor = edgeColor;
-      ctx.shadowBlur = darkMode ? 8 : 4;
       ctx.fill();
-      ctx.shadowBlur = 0;
     });
 
-    // 3. Draw Nodes (High-tech Component Badges)
+    // 3. Draw Nodes & Non-Overlapping World-Space Label Pills
     filteredNodes.forEach((node, i) => {
       const pos = positions[i];
       if (!pos) return;
@@ -701,64 +775,82 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       const meta = getNodeMeta(node.kind, darkMode);
       const isSelected = selectedNode?.id === node.id;
       const isHovered = hoveredIdxRef.current === i;
-      const isTargeted = highlightedNodeId && (node.id === highlightedNodeId || (node.file && highlightedNodeId.includes(node.file)));
+      const isTargeted =
+        highlightedNodeId &&
+        (node.id === highlightedNodeId || (node.file && highlightedNodeId.includes(node.file)));
 
-      let radius = 18;
       const k = (node.kind || "").toLowerCase();
-      if (k.includes("vulnerability") || k.includes("defect") || k.includes("gap")) radius = 22;
-      else if (k.includes("endpoint") || k.includes("route")) radius = 20;
+      let radius = 15;
+      if (k.includes("vulnerability") || k.includes("defect") || k.includes("gap")) radius = 17;
+      else if (k.includes("endpoint") || k.includes("route")) radius = 16;
 
-      // Outer Pulsing Glow Ring for Selected / Targeted / Critical
+      // Outer Glow Ring for Selected / Targeted / Vulnerability
       if (isSelected || isTargeted || k.includes("vulnerability")) {
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, radius + 8 / scale, 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, radius + 6, 0, Math.PI * 2);
         ctx.strokeStyle = meta.color;
-        ctx.lineWidth = 2.5 / scale;
-        ctx.shadowColor = meta.color;
-        ctx.shadowBlur = isSelected ? (darkMode ? 18 : 12) : 10;
+        ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.shadowBlur = 0;
       }
 
-      // Outer Card / Circle Core
+      // Circle Core
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = darkMode ? "#0a1124" : "#ffffff";
       ctx.shadowColor = meta.color;
-      ctx.shadowBlur = isSelected || isHovered ? (darkMode ? 15 : 10) : (darkMode ? 6 : 4);
+      ctx.shadowBlur = isSelected || isHovered ? 14 : 6;
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Border ring
+      // Border Ring
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
       ctx.strokeStyle = meta.color;
-      ctx.lineWidth = (isSelected || isHovered ? 3 : 2) / scale;
+      ctx.lineWidth = isSelected || isHovered ? 2.8 : 2;
       ctx.stroke();
 
-      // Colored Inner Core
+      // Colored Inner Fill
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, radius - 4, 0, Math.PI * 2);
+      ctx.arc(pos.x, pos.y, radius - 3.5, 0, Math.PI * 2);
       ctx.fillStyle = meta.bg;
       ctx.fill();
 
-      // Central Emblem / Dot
+      // Center Pip
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+      ctx.arc(pos.x, pos.y, 3.8, 0, Math.PI * 2);
       ctx.fillStyle = meta.color;
       ctx.fill();
 
-      // Label (Node Title)
-      const label = node.name.length > 22 ? `${node.name.slice(0, 20)}…` : node.name;
-      ctx.fillStyle = isSelected ? meta.color : textPrimary;
-      ctx.font = `bold ${11 / scale}px 'Plus Jakarta Sans', system-ui, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(label, pos.x, pos.y + radius + 14 / scale);
+      // Compact Frosted Label Pill in True World Coordinates (Never Overlaps Neighboring Cells)
+      const label = node.name.length > 21 ? `${node.name.slice(0, 19)}…` : node.name;
+      const subLabel = meta.label.toUpperCase();
+      ctx.font = "700 11px 'Plus Jakarta Sans', system-ui, sans-serif";
+      const titleW = ctx.measureText(label).width;
+      const pillW = Math.min(185, Math.max(titleW + 18, 72));
+      const pillH = 28;
+      const pillX = pos.x - pillW / 2;
+      const pillY = pos.y + radius + 6;
 
-      // Subtitle (Kind pill or file name)
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillW, pillH, 7);
+      ctx.fillStyle = darkMode ? "rgba(7, 12, 26, 0.9)" : "rgba(255, 255, 255, 0.94)";
+      ctx.fill();
+      ctx.strokeStyle = isSelected
+        ? meta.color
+        : darkMode
+        ? "rgba(255,255,255,0.1)"
+        : "rgba(15,23,42,0.12)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = isSelected ? meta.color : textPrimary;
+      ctx.font = "700 10.5px 'Plus Jakarta Sans', system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(label, pos.x, pillY + 13);
+
       ctx.fillStyle = meta.color;
-      ctx.font = `700 ${8.5 / scale}px 'JetBrains Mono', monospace`;
-      ctx.fillText(meta.label.toUpperCase(), pos.x, pos.y + radius + 25 / scale);
+      ctx.font = "700 8px 'JetBrains Mono', monospace";
+      ctx.fillText(subLabel, pos.x, pillY + 23.5);
     });
 
     ctx.restore();
@@ -1072,7 +1164,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
               }}
             >
               <Globe2 size={13} />
-              <span>3D Sphere</span>
+              <span>3D Graph Architecture</span>
             </button>
           )}
         </div>
@@ -1164,7 +1256,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           <div
             style={{
               position: "absolute",
-              bottom: "55px",
+              bottom: "16px",
               left: "16px",
               background: surface,
               backdropFilter: "blur(16px)",
@@ -1199,26 +1291,6 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
             )}
           </div>
         )}
-
-        {/* Stats Badge */}
-        <div
-          style={{
-            position: "absolute",
-            top: "12px",
-            left: "14px",
-            background: surface,
-            backdropFilter: "blur(12px)",
-            border: `1px solid ${border}`,
-            borderRadius: "8px",
-            padding: "5px 12px",
-            fontSize: "11px",
-            fontWeight: 600,
-            color: textSecondary,
-            pointerEvents: "none",
-          }}
-        >
-          {filteredNodes.length} Architectural Symbols · {filteredEdges.length} Verified Dependency Edges
-        </div>
 
         {/* ── Slide-Over Node Inspector Drawer ── */}
         {selectedNode && (
@@ -1375,27 +1447,25 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
             </div>
           </div>
         )}
+      </div>
 
-        {/* ── Bottom Legend ── */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "12px",
-            left: "14px",
-            background: surface,
-            backdropFilter: "blur(12px)",
-            border: `1px solid ${border}`,
-            borderRadius: "10px",
-            padding: "8px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-            fontSize: "11px",
-            color: textSecondary,
-            flexWrap: "wrap",
-            pointerEvents: "none",
-          }}
-        >
+      {/* ── Dedicated Non-Overlapping Bottom Legend & Status Bar ── */}
+      <div
+        style={{
+          padding: "10px 18px",
+          background: surface,
+          backdropFilter: "blur(16px)",
+          borderTop: `1px solid ${border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "16px",
+          fontSize: "11px",
+          color: textSecondary,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#00f0ff" }} /> Endpoint / API
           </span>
@@ -1414,6 +1484,13 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f43f5e" }} /> Vulnerability / Gap
           </span>
+        </div>
+
+        <div style={{ fontWeight: 700, color: cyan }}>
+          2D Graph Architecture ·{" "}
+          {nodes.length > 0
+            ? `Actual ERCG Data (${filteredNodes.length} Symbols · ${filteredEdges.length} Verified Edges)`
+            : "Illustrative Preview"}
         </div>
       </div>
 

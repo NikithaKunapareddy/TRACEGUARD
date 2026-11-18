@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Finding } from "../api/client";
 import { FindingEvidenceModal } from "./FindingEvidenceModal";
-import { Puzzle, ArrowRight, AlertCircle, CheckCircle2, ShieldQuestion, FileCode, Globe2 } from "lucide-react";
+import { Puzzle, AlertCircle, ShieldQuestion, FileCode, Globe2 } from "lucide-react";
 
 interface NegativeSpaceViewProps {
   findings: Finding[];
@@ -18,100 +18,109 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
 }) => {
   const [modalFinding, setModalFinding] = useState<Finding | null>(null);
 
-  const panelBg = darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff";
-  const borderBase = darkMode ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0";
   const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
-  const textSecondary = darkMode ? "#cbd5e1" : "#475569";
-  const textMuted = darkMode ? "#64748b" : "#94a3b8";
-  const cyan = darkMode ? "#38bdf8" : "#0284c7";
-  const purple = darkMode ? "#a855f7" : "#7c3aed";
-  const emerald = darkMode ? "#10b981" : "#059669";
-  const rose = darkMode ? "#f43f5e" : "#dc2626";
-  const amber = darkMode ? "#f59e0b" : "#d97706";
+  const textSecondary = darkMode ? "#cbd5e1" : "#334155";
+  const textMuted = darkMode ? "#94a3b8" : "#64748b";
 
   const gapFindings = findings.filter((f) => f.category === "gap");
   const missingRoutes = gapFindings.filter(
-    (f) => f.title.toLowerCase().includes("missing backend route") || f.subcategory === "missing_backend_route"
+    (f) =>
+      f.title.toLowerCase().includes("missing backend route") ||
+      f.subcategory === "missing_backend_route"
   );
   const mockStubs = gapFindings.filter(
-    (f) => f.title.toLowerCase().includes("mock") || f.subcategory === "mock_placeholder_endpoint"
+    (f) =>
+      f.title.toLowerCase().includes("mock") ||
+      f.subcategory === "mock_placeholder_endpoint" ||
+      !missingRoutes.includes(f)
   );
 
   return (
-    <div style={{ marginBottom: "32px" }}>
-      {/* Overview Banner */}
+    <div style={{ marginBottom: "36px", display: "flex", flexDirection: "column", gap: "28px" }}>
+      {/* Open Spectral Header Stream */}
       <div
+        className="vibgyor-prism-surface vib-tint-violet animate-reveal"
         style={{
-          background: darkMode ? "rgba(168, 85, 247, 0.08)" : "rgba(124, 58, 237, 0.08)",
-          border: darkMode ? "1px solid rgba(168, 85, 247, 0.25)" : "1px solid rgba(124, 58, 237, 0.25)",
-          borderRadius: "16px",
-          padding: "20px 24px",
-          marginBottom: "24px",
+          borderRadius: "30px",
+          padding: "26px 30px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "18px",
         }}
       >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-            <Puzzle size={20} color={purple} />
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: textPrimary }}>
-              Negative-Space Architectural Analysis
+        <div style={{ maxWidth: "760px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+            <Puzzle size={22} color="#8b5cf6" />
+            <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: textPrimary }}>
+              Negative-Space Architectural Intelligence
             </h3>
           </div>
-          <p style={{ margin: 0, color: textSecondary, fontSize: "13px", lineHeight: 1.5 }}>
-            Traditional linters analyze code that is present. TraceGuard identifies <strong>what is missing</strong>:
-            unimplemented backend routes invoked by frontends, mock data stubs disguised as production endpoints, and broken cross-service contracts.
+          <p style={{ margin: 0, color: textSecondary, fontSize: "13.5px", lineHeight: 1.6 }}>
+            Conventional static tools only inspect code that exists. TraceGuard cross-references client
+            invocations, route tables, and interface contracts to expose <strong>what is missing</strong>:
+            dangling frontend API calls, mock stubs, and unimplemented handlers.
           </p>
         </div>
 
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontSize: "28px", fontWeight: 800, color: purple }}>
+        <div style={{ textAlign: "center", padding: "8px 18px" }}>
+          <div style={{ fontSize: "36px", fontWeight: 800, color: "#8b5cf6", lineHeight: 1 }}>
             {gapFindings.length}
           </div>
-          <div style={{ fontSize: "11px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-            Detected Gaps
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 800,
+              color: textMuted,
+              textTransform: "uppercase",
+              marginTop: "4px",
+            }}
+          >
+            Structural Gaps
           </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-        {/* Missing Backend Routes (Frontend calls non-existent endpoint) */}
-        <div
-          style={{
-            background: panelBg,
-            backdropFilter: "blur(14px)",
-            border: `1px solid ${borderBase}`,
-            borderRadius: "14px",
-            padding: "20px",
-            boxShadow: darkMode ? "0 8px 30px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-            <AlertCircle size={18} color={rose} />
-            <h4 style={{ margin: 0, fontSize: "15px", color: textPrimary, fontWeight: 700 }}>
-              Dangling Client Invocations
+      {/* 2-Column Flowing VIBGYOR Lenses */}
+      <div
+        className="negspace-split-grid animate-reveal-delay-1"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "22px" }}
+      >
+        {/* Left: Dangling Client Invocations */}
+        <div className="vibgyor-prism-surface vib-tint-red" style={{ borderRadius: "28px", padding: "24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+            <AlertCircle size={19} color="#f43f5e" />
+            <h4 style={{ margin: 0, fontSize: "16.5px", color: textPrimary, fontWeight: 800 }}>
+              Dangling Client Invocations ({missingRoutes.length})
             </h4>
           </div>
 
           {missingRoutes.length === 0 ? (
-            <div style={{ padding: "24px", textAlign: "center", color: textMuted, fontSize: "13px" }}>
-              ✓ All frontend client calls have verified corresponding backend endpoints.
+            <div style={{ padding: "28px", textAlign: "center", color: textMuted, fontSize: "13px" }}>
+              ✓ All frontend client calls resolve to verified backend endpoints.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {missingRoutes.map((mr) => (
                 <div
                   key={mr.id}
                   style={{
-                    background: darkMode ? "rgba(244, 63, 94, 0.08)" : "rgba(254, 242, 242, 0.8)",
-                    border: darkMode ? "1px solid rgba(244, 63, 94, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
-                    borderRadius: "10px",
-                    padding: "14px",
+                    background: darkMode ? "rgba(4, 7, 17, 0.45)" : "rgba(255, 255, 255, 0.72)",
+                    borderRadius: "20px",
+                    padding: "16px 18px",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "13px", color: rose }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, fontSize: "13.5px", color: "#f43f5e" }}>
                       {mr.title}
                     </span>
                     <span style={{ fontSize: "11px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
@@ -121,34 +130,34 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
                   <pre
                     style={{
                       margin: 0,
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: darkMode ? "#030712" : "#ffffff",
-                      border: `1px solid ${borderBase}`,
-                      fontSize: "11px",
-                      color: rose,
+                      padding: "10px 14px",
+                      borderRadius: "14px",
+                      background: darkMode ? "#030712" : "#0f172a",
+                      fontSize: "11.5px",
+                      color: "#fda4af",
                       fontFamily: "JetBrains Mono, monospace",
+                      overflowX: "auto",
                     }}
                   >
                     {mr.snippet}
                   </pre>
-                  <p style={{ margin: "8px 0 10px 0", fontSize: "12px", color: textSecondary }}>
+                  <p style={{ margin: "10px 0 12px 0", fontSize: "12.5px", color: textSecondary }}>
                     {mr.recommended_remediation}
                   </p>
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     <button
                       onClick={() => setModalFinding(mr)}
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "5px",
-                        padding: "5px 10px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
+                        gap: "6px",
+                        padding: "6px 13px",
+                        borderRadius: "9999px",
+                        fontSize: "11.5px",
                         fontWeight: 700,
-                        background: `${cyan}18`,
-                        border: `1px solid ${cyan}44`,
-                        color: cyan,
+                        background: "rgba(244, 63, 94, 0.16)",
+                        color: "#f43f5e",
+                        border: "none",
                         cursor: "pointer",
                       }}
                     >
@@ -161,19 +170,19 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "5px",
-                          padding: "5px 10px",
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          background: `${purple}15`,
-                          border: `1px solid ${purple}33`,
-                          color: purple,
+                          gap: "6px",
+                          padding: "6px 13px",
+                          borderRadius: "9999px",
+                          fontSize: "11.5px",
+                          fontWeight: 700,
+                          background: "rgba(139, 92, 246, 0.16)",
+                          color: "#8b5cf6",
+                          border: "none",
                           cursor: "pointer",
                         }}
                       >
                         <Globe2 size={13} />
-                        <span>View in Graph</span>
+                        <span>Locate in Graph</span>
                       </button>
                     )}
                   </div>
@@ -183,42 +192,40 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
           )}
         </div>
 
-        {/* Mock Stubs and Incomplete Handlers */}
-        <div
-          style={{
-            background: panelBg,
-            backdropFilter: "blur(14px)",
-            border: `1px solid ${borderBase}`,
-            borderRadius: "14px",
-            padding: "20px",
-            boxShadow: darkMode ? "0 8px 30px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-            <ShieldQuestion size={18} color={amber} />
-            <h4 style={{ margin: 0, fontSize: "15px", color: textPrimary, fontWeight: 700 }}>
-              Mock Stubs & Unconnected Handlers
+        {/* Right: Mock Stubs & Unimplemented Contracts */}
+        <div className="vibgyor-prism-surface vib-tint-orange" style={{ borderRadius: "28px", padding: "24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+            <ShieldQuestion size={19} color="#f97316" />
+            <h4 style={{ margin: 0, fontSize: "16.5px", color: textPrimary, fontWeight: 800 }}>
+              Mock Stubs &amp; Unfulfilled Contracts ({mockStubs.length})
             </h4>
           </div>
 
           {mockStubs.length === 0 ? (
-            <div style={{ padding: "24px", textAlign: "center", color: textMuted, fontSize: "13px" }}>
-              ✓ No hardcoded dummy mocks detected in live route controllers.
+            <div style={{ padding: "28px", textAlign: "center", color: textMuted, fontSize: "13px" }}>
+              ✓ No mock stubs or unimplemented interfaces detected.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {mockStubs.map((ms) => (
                 <div
                   key={ms.id}
                   style={{
-                    background: darkMode ? "rgba(245, 158, 11, 0.08)" : "rgba(254, 243, 199, 0.6)",
-                    border: darkMode ? "1px solid rgba(245, 158, 11, 0.25)" : "1px solid rgba(245, 158, 11, 0.25)",
-                    borderRadius: "10px",
-                    padding: "14px",
+                    background: darkMode ? "rgba(4, 7, 17, 0.45)" : "rgba(255, 255, 255, 0.72)",
+                    borderRadius: "20px",
+                    padding: "16px 18px",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "13px", color: amber }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, fontSize: "13.5px", color: "#f97316" }}>
                       {ms.title}
                     </span>
                     <span style={{ fontSize: "11px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
@@ -228,34 +235,34 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
                   <pre
                     style={{
                       margin: 0,
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: darkMode ? "#030712" : "#ffffff",
-                      border: `1px solid ${borderBase}`,
-                      fontSize: "11px",
-                      color: amber,
+                      padding: "10px 14px",
+                      borderRadius: "14px",
+                      background: darkMode ? "#030712" : "#0f172a",
+                      fontSize: "11.5px",
+                      color: "#fdba74",
                       fontFamily: "JetBrains Mono, monospace",
+                      overflowX: "auto",
                     }}
                   >
                     {ms.snippet}
                   </pre>
-                  <p style={{ margin: "8px 0 10px 0", fontSize: "12px", color: textSecondary }}>
+                  <p style={{ margin: "10px 0 12px 0", fontSize: "12.5px", color: textSecondary }}>
                     {ms.recommended_remediation}
                   </p>
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     <button
                       onClick={() => setModalFinding(ms)}
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "5px",
-                        padding: "5px 10px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
+                        gap: "6px",
+                        padding: "6px 13px",
+                        borderRadius: "9999px",
+                        fontSize: "11.5px",
                         fontWeight: 700,
-                        background: `${cyan}18`,
-                        border: `1px solid ${cyan}44`,
-                        color: cyan,
+                        background: "rgba(249, 115, 22, 0.16)",
+                        color: "#f97316",
+                        border: "none",
                         cursor: "pointer",
                       }}
                     >
@@ -268,19 +275,19 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "5px",
-                          padding: "5px 10px",
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          background: `${purple}15`,
-                          border: `1px solid ${purple}33`,
-                          color: purple,
+                          gap: "6px",
+                          padding: "6px 13px",
+                          borderRadius: "9999px",
+                          fontSize: "11.5px",
+                          fontWeight: 700,
+                          background: "rgba(139, 92, 246, 0.16)",
+                          color: "#8b5cf6",
+                          border: "none",
                           cursor: "pointer",
                         }}
                       >
                         <Globe2 size={13} />
-                        <span>View in Graph</span>
+                        <span>Locate in Graph</span>
                       </button>
                     )}
                   </div>
@@ -291,7 +298,6 @@ export const NegativeSpaceView: React.FC<NegativeSpaceViewProps> = ({
         </div>
       </div>
 
-      {/* Source Code Evidence Explorer Modal */}
       {modalFinding && (
         <FindingEvidenceModal
           auditId={auditId || ""}

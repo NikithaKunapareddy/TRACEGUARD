@@ -1,41 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Shield,
-  Layers,
   Puzzle,
   Code2,
   ArrowRight,
   History,
   CheckCircle2,
   Lock,
-  GitBranch,
   Network,
-  Cpu,
-  BarChart3,
-  ExternalLink,
-  ChevronRight,
+  Sparkles,
+  Play,
+  Terminal,
+  Zap,
+  Globe2,
+  Layers,
 } from "lucide-react";
 
 interface LandingHeroProps {
   onStartAudit: () => void;
   onViewHistory: () => void;
   onExploreCapabilities: () => void;
+  onQuickLaunchRepo?: (repoPath: string) => void;
   darkMode: boolean;
   totalAuditsCount?: number;
 }
 
-// ─── Topological Repository Intelligence Visualizer Canvas ───────────────────
 interface TopologyNode {
   x: number;
   y: number;
   vx: number;
   vy: number;
   label: string;
-  type: "endpoint" | "controller" | "model" | "security" | "config";
+  role: string;
   color: string;
+  radius: number;
 }
 
-const RepositoryTopologyCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
+// ─── Interactive Full-Spectrum VIBGYOR Constellation Canvas ─────────────────
+const SpectralConstellationCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -45,125 +47,147 @@ const RepositoryTopologyCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode })
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
 
-    // Semantic architecture graph nodes
-    const nodeTemplates: Array<{ label: string; type: TopologyNode["type"]; color: string }> = [
-      { label: "POST /checkout", type: "endpoint", color: darkMode ? "#00F0FF" : "#0284C7" },
-      { label: "GET /inventory", type: "endpoint", color: darkMode ? "#38BDF8" : "#0EA5E9" },
-      { label: "DELETE /admin", type: "security", color: darkMode ? "#F43F5E" : "#DC2626" },
-      { label: "OrderService", type: "controller", color: darkMode ? "#A855F7" : "#7C3AED" },
-      { label: "AuthGuard", type: "security", color: darkMode ? "#F43F5E" : "#DC2626" },
-      { label: "DatabasePool", type: "model", color: darkMode ? "#10B981" : "#059669" },
-      { label: "PaymentLedger", type: "model", color: darkMode ? "#10B981" : "#059669" },
-      { label: "JWT_SECRET", type: "config", color: darkMode ? "#F59E0B" : "#D97706" },
-      { label: "AuditSink", type: "controller", color: darkMode ? "#8B5CF6" : "#6D28D9" },
-      { label: "UserSession", type: "model", color: darkMode ? "#10B981" : "#059669" },
+    // VIBGYOR Spectral Nodes
+    const templates = [
+      { label: "POST /checkout", role: "API Gateway", color: "#8b5cf6", radius: 5.5 }, // Violet
+      { label: "AuthGuard.verify", role: "Zero-Trust", color: "#6366f1", radius: 5 },   // Indigo
+      { label: "OrderController", role: "Domain Core", color: "#3b82f6", radius: 6 },   // Blue
+      { label: "InventoryStream", role: "Async Event", color: "#06b6d4", radius: 4.5 }, // Cyan
+      { label: "LedgerSQLModel", role: "Persistence", color: "#10b981", radius: 5.5 },  // Green
+      { label: "AppConfig.env", role: "Config Guard", color: "#eab308", radius: 4.5 },   // Yellow
+      { label: "CartService.route", role: "Route Handler", color: "#f97316", radius: 5.5 }, // Orange
+      { label: "QueryBuilder.exec", role: "Data Access", color: "#f43f5e", radius: 6 },  // Red
     ];
 
-    const nodes: TopologyNode[] = nodeTemplates.map((t, i) => {
-      const angle = (i / nodeTemplates.length) * Math.PI * 2;
-      const radiusX = canvas.width * 0.38;
-      const radiusY = canvas.height * 0.36;
+    const w = () => canvas.offsetWidth;
+    const h = () => canvas.offsetHeight;
+
+    const nodes: TopologyNode[] = templates.map((t, i) => {
+      const angle = (i / templates.length) * Math.PI * 2;
+      const rx = Math.max(110, w() * 0.34);
+      const ry = Math.max(90, h() * 0.34);
       return {
-        x: canvas.width / 2 + Math.cos(angle) * radiusX + (Math.random() - 0.5) * 40,
-        y: canvas.height / 2 + Math.sin(angle) * radiusY + (Math.random() - 0.5) * 30,
-        vx: (Math.random() - 0.5) * (prefersReducedMotion ? 0 : 0.25),
-        vy: (Math.random() - 0.5) * (prefersReducedMotion ? 0 : 0.25),
+        x: w() / 2 + Math.cos(angle) * rx,
+        y: h() / 2 + Math.sin(angle) * ry,
+        vx: (Math.random() - 0.5) * (prefersReducedMotion ? 0 : 0.35),
+        vy: (Math.random() - 0.5) * (prefersReducedMotion ? 0 : 0.35),
         label: t.label,
-        type: t.type,
+        role: t.role,
         color: t.color,
+        radius: t.radius,
       };
     });
 
-    // Edges linking related components
-    const links: Array<[number, number]> = [
-      [0, 3], // POST /checkout -> OrderService
-      [1, 3], // GET /inventory -> OrderService
-      [2, 4], // DELETE /admin -> AuthGuard
-      [3, 5], // OrderService -> DatabasePool
-      [3, 6], // OrderService -> PaymentLedger
-      [4, 8], // AuthGuard -> AuditSink
-      [7, 4], // JWT_SECRET -> AuthGuard
-      [5, 9], // DatabasePool -> UserSession
-      [8, 5], // AuditSink -> DatabasePool
+    const edges: Array<[number, number]> = [
+      [0, 1],
+      [0, 2],
+      [1, 5],
+      [2, 3],
+      [2, 4],
+      [2, 7],
+      [3, 4],
+      [6, 0],
+      [7, 4],
+      [1, 7],
     ];
 
-    let pulseTime = 0;
+    let phase = 0;
 
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pulseTime += 0.015;
+      const width = w();
+      const height = h();
+      ctx.clearRect(0, 0, width, height);
+      phase += 0.014;
 
-      // Update positions
+      // Draw soft concentric radar rings in the center
+      const cx = width / 2;
+      const cy = height / 2;
+      [0.18, 0.3, 0.42].forEach((rFactor, idx) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.min(width, height) * rFactor, 0, Math.PI * 2);
+        ctx.strokeStyle = darkMode
+          ? `rgba(139, 92, 246, ${0.08 - idx * 0.02})`
+          : `rgba(99, 102, 241, ${0.09 - idx * 0.02})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+
       if (!prefersReducedMotion) {
         for (const n of nodes) {
           n.x += n.vx;
           n.y += n.vy;
-          const pad = 40;
-          if (n.x < pad || n.x > canvas.width - pad) n.vx *= -1;
-          if (n.y < pad || n.y > canvas.height - pad) n.vy *= -1;
+          const pad = 48;
+          if (n.x < pad || n.x > width - pad) n.vx *= -1;
+          if (n.y < pad || n.y > height - pad) n.vy *= -1;
         }
       }
 
-      // Draw edges with subtle animated pulse
-      for (let i = 0; i < links.length; i++) {
-        const [aIdx, bIdx] = links[i];
-        const a = nodes[aIdx];
-        const b = nodes[bIdx];
-        if (!a || !b) continue;
+      // Draw VIBGYOR gradient edges and traveling photons
+      edges.forEach(([ai, bi], idx) => {
+        const a = nodes[ai];
+        const b = nodes[bi];
+        if (!a || !b) return;
+
+        const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+        grad.addColorStop(0, `${a.color}55`);
+        grad.addColorStop(1, `${b.color}55`);
 
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
-        ctx.strokeStyle = darkMode ? "rgba(56, 189, 248, 0.12)" : "rgba(15, 23, 42, 0.08)";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.4;
         ctx.stroke();
 
-        // Traveling dataflow pulse
         if (!prefersReducedMotion) {
-          const t = (pulseTime + i * 0.22) % 1;
+          const t = (phase + idx * 0.17) % 1;
           const px = a.x + (b.x - a.x) * t;
           const py = a.y + (b.y - a.y) * t;
 
           ctx.beginPath();
-          ctx.arc(px, py, 2, 0, Math.PI * 2);
+          ctx.arc(px, py, 2.8, 0, Math.PI * 2);
           ctx.fillStyle = a.color;
-          ctx.globalAlpha = 0.65;
           ctx.fill();
-          ctx.globalAlpha = 1.0;
         }
-      }
+      });
 
-      // Draw nodes
-      for (const n of nodes) {
-        // Outer subtle halo
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = n.color;
-        ctx.globalAlpha = darkMode ? 0.35 : 0.2;
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
+      // Draw nodes with glowing haloes and floating labels
+      nodes.forEach((n, idx) => {
+        const pulse = Math.sin(phase * 2 + idx) * 2;
 
-        // Core pip
+        // Outer halo
         ctx.beginPath();
-        ctx.arc(n.x, n.y, 2.5, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, n.radius + 7 + pulse, 0, Math.PI * 2);
+        ctx.fillStyle = `${n.color}22`;
+        ctx.fill();
+
+        // Core orb
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
         ctx.fillStyle = n.color;
         ctx.fill();
-      }
+
+        // Crisp label pill
+        ctx.font = "600 10.5px 'JetBrains Mono', monospace";
+        ctx.fillStyle = darkMode ? "#e2e8f0" : "#1e293b";
+        ctx.textAlign = "center";
+        ctx.fillText(n.label, n.x, n.y + n.radius + 14);
+      });
 
       animRef.current = requestAnimationFrame(render);
     };
 
     animRef.current = requestAnimationFrame(render);
-
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
@@ -177,88 +201,91 @@ const RepositoryTopologyCanvas: React.FC<{ darkMode: boolean }> = ({ darkMode })
     <canvas
       ref={canvasRef}
       style={{
-        position: "absolute",
-        inset: 0,
         width: "100%",
         height: "100%",
-        pointerEvents: "none",
-        zIndex: 0,
-        borderRadius: "20px",
-        opacity: darkMode ? 0.8 : 0.5,
+        display: "block",
       }}
     />
   );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export const LandingHero: React.FC<LandingHeroProps> = ({
   onStartAudit,
   onViewHistory,
   onExploreCapabilities,
+  onQuickLaunchRepo,
   darkMode,
   totalAuditsCount = 0,
 }) => {
-  const [ctaHovered, setCtaHovered] = useState(false);
   const capabilitiesRef = useRef<HTMLDivElement>(null);
 
-  // Exact executive color palette
-  const cyan = darkMode ? "#00F0FF" : "#0284C7";
-  const cyanSoft = darkMode ? "#38BDF8" : "#0EA5E9";
-  const blue = darkMode ? "#3B82F6" : "#2563EB";
-  const purple = darkMode ? "#A855F7" : "#7C3AED";
-  const emerald = darkMode ? "#10B981" : "#059669";
-  const amber = darkMode ? "#F59E0B" : "#D97706";
-  const rose = darkMode ? "#F43F5E" : "#DC2626";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textSecondary = darkMode ? "#cbd5e1" : "#334155";
+  const textMuted = darkMode ? "#94a3b8" : "#64748b";
 
-  const textPrimary = darkMode ? "#F8FAFC" : "#0F172A";
-  const textSecondary = darkMode ? "#94A3B8" : "#475569";
-  const textMuted = darkMode ? "#64748B" : "#94A3B8";
-
-  const panelBg = darkMode ? "#101A2B" : "#FFFFFF";
-  const cardBg = darkMode ? "#111D30" : "#FFFFFF";
-  const borderSubtle = darkMode ? "rgba(56, 189, 248, 0.12)" : "rgba(0, 0, 0, 0.08)";
-  const borderHover = darkMode ? "rgba(56, 189, 248, 0.35)" : "rgba(2, 132, 199, 0.35)";
+  const quickSuites = [
+    {
+      label: "E-Commerce Fullstack",
+      tag: "FastAPI · React · SQLite",
+      path: "./benchmark_repos/repo1_ecommerce_fullstack",
+      color: "#8b5cf6",
+    },
+    {
+      label: "Polyglot Fintech",
+      tag: "FastAPI · SQLAlchemy",
+      path: "./benchmark_repos/repo3_polyglot_fintech",
+      color: "#3b82f6",
+    },
+    {
+      label: "Cloud Microservice",
+      tag: "Python · AsyncIO · Docker",
+      path: "./benchmark_repos/repo2_cloud_microservice",
+      color: "#10b981",
+    },
+    {
+      label: "Node.js Express API",
+      tag: "Node.js · Express",
+      path: "./benchmark_repos/repo6_node_express",
+      color: "#f97316",
+    },
+  ];
 
   const capabilities = [
     {
       id: "sec",
-      icon: <Shield size={18} color={cyanSoft} />,
-      title: "Security Intelligence",
+      tintClass: "vib-tint-red",
+      icon: <Shield size={22} color="#f43f5e" />,
+      title: "Cross-File Security Taint Engine",
       tag: "Deterministic AST",
-      color: cyanSoft,
-      bg: darkMode ? "rgba(0, 240, 255, 0.08)" : "rgba(2, 132, 199, 0.06)",
-      border: darkMode ? "rgba(0, 240, 255, 0.22)" : "rgba(2, 132, 199, 0.2)",
-      desc: "Cross-file taint tracking, SQL injection detection, unprotected privileged routes and hardcoded secret isolation.",
+      accent: "#f43f5e",
+      desc: "Tracks untrusted inputs across module boundaries to expose SQL injections, command execution sinks, hardcoded credentials, and unauthenticated admin routes.",
     },
     {
       id: "arch",
-      icon: <Network size={18} color={purple} />,
-      title: "Architecture Intelligence",
+      tintClass: "vib-tint-violet",
+      icon: <Network size={22} color="#8b5cf6" />,
+      title: "2D & 3D Graph Architecture",
       tag: "NetworkX ERCG",
-      color: purple,
-      bg: darkMode ? "rgba(168, 85, 247, 0.08)" : "rgba(124, 58, 237, 0.06)",
-      border: darkMode ? "rgba(168, 85, 247, 0.22)" : "rgba(124, 58, 237, 0.2)",
-      desc: "Evidence-linked Repository Consistency Graph indexing all symbols, call relations, dataflows and dependency topologies in 2D & 3D.",
+      accent: "#8b5cf6",
+      desc: "Synthesizes an Evidence-linked Repository Consistency Graph mapping every route, controller, database model, and call edge in interactive space.",
     },
     {
       id: "neg",
-      icon: <Puzzle size={18} color={rose} />,
-      title: "Negative-Space Detection",
-      tag: "Structural Absence",
-      color: rose,
-      bg: darkMode ? "rgba(244, 63, 94, 0.08)" : "rgba(220, 38, 38, 0.06)",
-      border: darkMode ? "rgba(244, 63, 94, 0.22)" : "rgba(220, 38, 38, 0.2)",
-      desc: "Discovers what should exist but is missing: dangling frontend client calls, mock checkout stubs and broken API contracts.",
+      tintClass: "vib-tint-orange",
+      icon: <Puzzle size={22} color="#f97316" />,
+      title: "Negative-Space Absence Detection",
+      tag: "Structural Gaps",
+      accent: "#f97316",
+      desc: "Discovers what should exist in your architecture but is missing: dangling frontend client calls, mock checkout stubs, and unfulfilled interfaces.",
     },
     {
       id: "eng",
-      icon: <Code2 size={18} color={amber} />,
-      title: "Engineering Quality",
-      tag: "Hygiene & Debt",
-      color: amber,
-      bg: darkMode ? "rgba(245, 158, 11, 0.08)" : "rgba(217, 119, 6, 0.06)",
-      border: darkMode ? "rgba(245, 158, 11, 0.22)" : "rgba(217, 119, 6, 0.2)",
-      desc: "Identifies code slop, redundant functions, blind exception suppression and dead controller handlers before production merges.",
+      tintClass: "vib-tint-green",
+      icon: <Code2 size={22} color="#10b981" />,
+      title: "Engineering Hygiene & Slop Radar",
+      tag: "Engineering Quality Analysis",
+      accent: "#10b981",
+      desc: "Eliminates blind exception swallowing, redundant wrapper functions, dead handlers, and leftover debug artifacts before they reach production.",
     },
   ];
 
@@ -271,285 +298,436 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   };
 
   return (
-    <div style={{ padding: "10px 0 30px 0" }}>
-      {/* ── Hero Container ─────────────────────────────────────────────────── */}
-      <div
-        className="hero-container gemini-glass-card"
+    <div style={{ display: "flex", flexDirection: "column", gap: "56px", padding: "12px 0 36px" }}>
+      {/* ====================================================================
+          1. SEAMLESS OPEN SPATIAL HERO (Zero Outer Box — Flows on Living Aurora)
+         ==================================================================== */}
+      <section
+        className="hero-asymmetric-grid animate-reveal"
         style={{
-          borderRadius: "20px",
-          background: darkMode
-            ? "linear-gradient(180deg, rgba(10, 18, 36, 0.85) 0%, rgba(7, 11, 20, 0.92) 100%)"
-            : "linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.82) 100%)",
-          border: `1px solid ${borderSubtle}`,
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          position: "relative",
-          overflow: "hidden",
-          padding: "54px 36px 48px 36px",
-          boxShadow: darkMode
-            ? "0 20px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
-            : "0 10px 30px rgba(0, 0, 0, 0.06)",
-          textAlign: "center",
-          marginBottom: "32px",
+          display: "grid",
+          gridTemplateColumns: "1.15fr 0.85fr",
+          gap: "clamp(28px, 4vw, 56px)",
+          alignItems: "center",
+          minHeight: "min(68vh, 640px)",
         }}
       >
-        {/* Subtle Ambient Topology Network Canvas (Behind Text) */}
-        <RepositoryTopologyCanvas darkMode={darkMode} />
-
-        {/* Hero Content (Clean, Z-Indexed Above Canvas) */}
-        <div style={{ position: "relative", zIndex: 1, maxWidth: "860px", margin: "0 auto" }}>
-          {/* Release Badge */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "22px" }}>
+        {/* Left Editorial Column */}
+        <div>
+          {/* Spectral Status Pill */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "6px 16px",
+              borderRadius: "9999px",
+              background: darkMode
+                ? "linear-gradient(90deg, rgba(139, 92, 246, 0.16), rgba(59, 130, 246, 0.14), rgba(16, 185, 129, 0.14))"
+                : "linear-gradient(90deg, rgba(139, 92, 246, 0.12), rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12))",
+              marginBottom: "24px",
+            }}
+          >
+            <Sparkles size={14} color="#8b5cf6" />
             <span
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "7px",
-                padding: "5px 14px",
-                borderRadius: "9999px",
-                background: darkMode ? "rgba(0, 240, 255, 0.08)" : "rgba(2, 132, 199, 0.08)",
-                border: darkMode ? "1px solid rgba(0, 240, 255, 0.28)" : "1px solid rgba(2, 132, 199, 0.25)",
-                color: cyan,
-                fontSize: "12px",
-                fontWeight: 700,
-                letterSpacing: "0.4px",
+                fontSize: "11.5px",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: darkMode ? "#c4b5fd" : "#5b21b6",
               }}
             >
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: cyan,
-                  boxShadow: `0 0 8px ${cyan}`,
-                }}
-              />
-              ENTERPRISE REPOSITORY INTEGRITY AGENT v1.0.0
+              Architecture-Agnostic Repository Intelligence
             </span>
           </div>
 
-          {/* ── Headline: Guaranteed High-Contrast & Readable ───────────────── */}
+          {/* Fluid Display Headline */}
           <h1
             style={{
-              margin: "0 0 18px 0",
-              fontSize: "clamp(34px, 5.2vw, 56px)",
-              lineHeight: 1.14,
+              margin: "0 0 22px 0",
+              fontSize: "clamp(36px, 5.4vw, 66px)",
+              lineHeight: 1.06,
               fontWeight: 800,
-              letterSpacing: "-0.035em",
+              letterSpacing: "-0.04em",
+              color: textPrimary,
             }}
           >
-            <span
-              style={{
-                display: "block",
-                color: textPrimary,
-                marginBottom: "6px",
-              }}
-            >
+            <span style={{ display: "block", marginBottom: "6px" }}>
               Understand your codebase.
             </span>
-            <span className="hero-gradient-title">
-              Expose what others miss.
-            </span>
+            <span className="hero-gradient-title">Find what others miss.</span>
           </h1>
 
-          {/* ── Supporting Copy ────────────────────────────────────────────── */}
+          {/* Editorial Lead Copy */}
           <p
             style={{
-              margin: "0 auto 32px auto",
-              fontSize: "17px",
-              lineHeight: 1.6,
+              margin: "0 0 32px 0",
+              fontSize: "clamp(16px, 1.8vw, 19px)",
+              lineHeight: 1.65,
               color: textSecondary,
-              maxWidth: "740px",
+              maxWidth: "640px",
+              fontWeight: 400,
             }}
           >
-            TraceGuard is an architecture-agnostic repository intelligence agent that discovers security
-            vulnerabilities, missing implementations, architectural inconsistencies and hidden engineering debt.
+            TraceGuard analyzes software repositories to uncover security vulnerabilities,
+            missing implementations, architectural inconsistencies and hidden engineering
+            debt — with evidence you can investigate.
           </p>
 
-          {/* ── CTAs & Actions ─────────────────────────────────────────────── */}
+          {/* Primary Actions Row */}
           <div
-            className="hero-cta-group"
+            className="hero-actions-row"
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
               gap: "14px",
               flexWrap: "wrap",
-              marginBottom: "32px",
+              marginBottom: "34px",
             }}
           >
-            {/* Primary CTA */}
-            <button
-              onClick={onStartAudit}
-              onMouseEnter={() => setCtaHovered(true)}
-              onMouseLeave={() => setCtaHovered(false)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "13px 30px",
-                borderRadius: "12px",
-                fontSize: "15px",
-                fontWeight: 700,
-                color: "#FFFFFF",
-                background: darkMode
-                  ? "linear-gradient(135deg, #00B4D8 0%, #0077B6 50%, #7209B7 100%)"
-                  : "linear-gradient(135deg, #0284C7 0%, #2563EB 100%)",
-                border: "none",
-                cursor: "pointer",
-                boxShadow: ctaHovered
-                  ? `0 10px 28px ${cyan}66`
-                  : `0 6px 20px ${cyan}44`,
-                transform: ctaHovered ? "translateY(-1.5px)" : "none",
-                transition: "all 0.18s ease",
-              }}
-            >
-              <span>Launch Repository Audit</span>
+            <button onClick={onStartAudit} className="vibgyor-cta-btn">
+              <Play size={16} fill="#ffffff" />
+              <span>Open Audit Workspace</span>
               <ArrowRight size={17} />
             </button>
 
-            {/* Secondary CTA */}
             <button
               onClick={handleScrollToCapabilities}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                padding: "13px 22px",
-                borderRadius: "12px",
+                padding: "14px 24px",
+                borderRadius: "9999px",
                 fontSize: "14.5px",
-                fontWeight: 600,
+                fontWeight: 700,
                 color: textPrimary,
-                background: darkMode ? "rgba(16, 26, 43, 0.75)" : "rgba(241, 245, 249, 0.9)",
-                border: `1px solid ${borderSubtle}`,
+                background: darkMode ? "rgba(255, 255, 255, 0.06)" : "rgba(15, 23, 42, 0.05)",
+                border: "none",
                 cursor: "pointer",
-                transition: "all 0.18s ease",
               }}
             >
-              <span>Explore Capabilities</span>
-              <ChevronRight size={16} color={cyan} />
+              <Layers size={16} color="#3b82f6" />
+              <span>Explore Architecture</span>
             </button>
 
-            {/* Audit History Pill */}
             {totalAuditsCount > 0 && (
               <button
                 onClick={onViewHistory}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "7px",
-                  padding: "13px 20px",
-                  borderRadius: "12px",
+                  gap: "8px",
+                  padding: "14px 22px",
+                  borderRadius: "9999px",
                   fontSize: "14px",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   color: textSecondary,
-                  background: darkMode ? "rgba(16, 26, 43, 0.5)" : "rgba(241, 245, 249, 0.7)",
-                  border: `1px solid ${borderSubtle}`,
+                  background: darkMode ? "rgba(249, 115, 22, 0.12)" : "rgba(249, 115, 22, 0.10)",
+                  border: "none",
                   cursor: "pointer",
-                  transition: "all 0.18s ease",
                 }}
               >
-                <History size={15} color={purple} />
+                <History size={15} color="#f97316" />
                 <span>Audit History ({totalAuditsCount})</span>
               </button>
             )}
           </div>
 
-          {/* ── Verified Product Statistics Bar ────────────────────────────── */}
-          <div
-            className="stats-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "14px",
-              padding: "14px 18px",
-              borderRadius: "14px",
-              background: darkMode ? "rgba(7, 11, 20, 0.65)" : "rgba(248, 250, 252, 0.9)",
-              border: `1px solid ${borderSubtle}`,
-              marginBottom: "28px",
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: cyan }}>9</div>
-              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
-                Benchmark Repositories
-              </div>
+          {/* Instant One-Click Benchmark Stream */}
+          <div>
+            <div
+              style={{
+                fontSize: "11px",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: textMuted,
+                marginBottom: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <Zap size={13} color="#eab308" />
+              <span>Instant Target Mount — Jump Straight to Inspection</span>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: emerald }}>62</div>
-              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
-                Passing Automated Tests
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: purple }}>4</div>
-              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
-                Analysis Dimensions
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: blue }}>7</div>
-              <div style={{ fontSize: "11px", color: textMuted, fontWeight: 600, textTransform: "uppercase" }}>
-                Dashboard Sections
-              </div>
-            </div>
-          </div>
-
-          {/* ── Trust Indicators ───────────────────────────────────────────── */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "24px",
-              flexWrap: "wrap",
-              fontSize: "12px",
-              color: textMuted,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <CheckCircle2 size={14} color={emerald} />
-              <span>Static AST &amp; Tree-sitter Analysis</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <CheckCircle2 size={14} color={cyan} />
-              <span>Evidence-Linked Repository Graph</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Lock size={13} color={purple} />
-              <span>Strict Read-Only Target Inspection</span>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {quickSuites.map((s) => (
+                <button
+                  key={s.path}
+                  onClick={() => {
+                    if (onQuickLaunchRepo) {
+                      onQuickLaunchRepo(s.path);
+                    } else {
+                      onStartAudit();
+                    }
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 14px",
+                    borderRadius: "9999px",
+                    background: darkMode
+                      ? `radial-gradient(circle at 0% 50%, ${s.color}28 0%, rgba(255,255,255,0.04) 100%)`
+                      : `radial-gradient(circle at 0% 50%, ${s.color}20 0%, rgba(15,23,42,0.04) 100%)`,
+                    border: "none",
+                    color: textPrimary,
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "50%",
+                      background: s.color,
+                      boxShadow: `0 0 8px ${s.color}`,
+                    }}
+                  />
+                  <span>{s.label}</span>
+                  <span style={{ fontSize: "10.5px", color: textMuted, fontWeight: 500 }}>
+                    {s.tag}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Section: Refined 4 Core Intelligence Capabilities ───────────────── */}
-      <div ref={capabilitiesRef} style={{ marginTop: "36px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "18px" }}>
-          <div>
-            <div style={{ fontSize: "11.5px", fontWeight: 800, color: cyan, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>
-              Platform Pillars
+        {/* Right Column: Live Interactive VIBGYOR Constellation Orb */}
+        <div
+          className="vibgyor-prism-surface"
+          style={{
+            height: "clamp(320px, 46vw, 470px)",
+            borderRadius: "36px",
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "20px",
+          }}
+        >
+          {/* Top floating overlay pill inside visualizer */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "5px 12px",
+                borderRadius: "9999px",
+                background: darkMode ? "rgba(4, 7, 17, 0.65)" : "rgba(255, 255, 255, 0.75)",
+                backdropFilter: "blur(12px)",
+                fontSize: "11px",
+                fontWeight: 700,
+                color: textPrimary,
+              }}
+            >
+              <Globe2 size={13} color="#06b6d4" />
+              <span>Graph Architecture · Illustrative ERCG Preview</span>
+            </span>
+
+            <span
+              style={{
+                padding: "4px 10px",
+                borderRadius: "9999px",
+                background: "rgba(16, 185, 129, 0.16)",
+                color: "#10b981",
+                fontSize: "10.5px",
+                fontWeight: 800,
+              }}
+            >
+              READ-ONLY SANDBOX
+            </span>
+          </div>
+
+          {/* Interactive Canvas */}
+          <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+            <SpectralConstellationCanvas darkMode={darkMode} />
+          </div>
+
+          {/* Bottom Spectrum Legend Ribbon */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              display: "flex",
+              justifyContent: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              padding: "8px 14px",
+              borderRadius: "9999px",
+              background: darkMode ? "rgba(4, 7, 17, 0.65)" : "rgba(255, 255, 255, 0.78)",
+              backdropFilter: "blur(12px)",
+              fontSize: "11px",
+              fontWeight: 600,
+              color: textSecondary,
+              pointerEvents: "none",
+            }}
+          >
+            {[
+              { label: "Gateway", color: "#8b5cf6" },
+              { label: "Controller", color: "#3b82f6" },
+              { label: "Persistence", color: "#10b981" },
+              { label: "Config", color: "#eab308" },
+              { label: "Gap", color: "#f97316" },
+              { label: "Taint Sink", color: "#f43f5e" },
+            ].map((item) => (
+              <span key={item.label} style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                <span
+                  style={{
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    background: item.color,
+                  }}
+                />
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ====================================================================
+          2. OPEN SPECTRAL TELEMETRY RIBBON (No Box — Pure Flowing Typography)
+         ==================================================================== */}
+      <section className="animate-reveal-delay-1" style={{ position: "relative", padding: "24px 0" }}>
+        <div className="spectral-hairline" style={{ marginBottom: "28px" }} />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+            gap: "24px",
+            textAlign: "center",
+          }}
+        >
+          {[
+            {
+              value: "9 Suites",
+              label: "Polyglot Benchmark Architectures",
+              sub: "FastAPI · React · Go · Express · AsyncIO",
+              color: "#8b5cf6",
+            },
+            {
+              value: "62 Checks",
+              label: "Deterministic AST Verifications",
+              sub: "Evidence-Linked Static Analysis",
+              color: "#3b82f6",
+            },
+            {
+              value: "4 Axes",
+              label: "Weighted Integrity Dimensions",
+              sub: "Security · Completeness · Quality · Hygiene",
+              color: "#10b981",
+            },
+            {
+              value: "2D + 3D",
+              label: "Interactive Topology Engines",
+              sub: "Real-Time Force & Three.js WebGL",
+              color: "#f97316",
+            },
+          ].map((stat) => (
+            <div key={stat.label} style={{ padding: "4px 12px" }}>
+              <div
+                style={{
+                  fontSize: "clamp(28px, 3.5vw, 40px)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.03em",
+                  color: stat.color,
+                  lineHeight: 1.1,
+                  marginBottom: "6px",
+                }}
+              >
+                {stat.value}
+              </div>
+              <div style={{ fontSize: "13.5px", fontWeight: 700, color: textPrimary }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: "11.5px", color: textMuted, marginTop: "2px" }}>
+                {stat.sub}
+              </div>
             </div>
-            <h2 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary, margin: 0 }}>
-              Continuous Repository Integrity Intelligence
+          ))}
+        </div>
+
+        <div className="spectral-hairline" style={{ marginTop: "28px" }} />
+      </section>
+
+      {/* ====================================================================
+          3. VIBGYOR PRISM INTELLIGENCE PILLARS (Light Rainbow Interior Lenses)
+         ==================================================================== */}
+      <section ref={capabilitiesRef} className="animate-reveal-delay-2">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            flexWrap: "wrap",
+            gap: "16px",
+            marginBottom: "28px",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "11.5px",
+                fontWeight: 800,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#8b5cf6",
+                marginBottom: "6px",
+              }}
+            >
+              Four-Dimensional Inspection Spectrum
+            </div>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "clamp(24px, 3.2vw, 34px)",
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                color: textPrimary,
+              }}
+            >
+              Engineered to uncover what linters can’t see.
             </h2>
           </div>
+
           <button
             onClick={onStartAudit}
             style={{
-              background: "transparent",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 20px",
+              borderRadius: "9999px",
+              background: darkMode ? "rgba(139, 92, 246, 0.14)" : "rgba(124, 58, 237, 0.10)",
+              color: darkMode ? "#c4b5fd" : "#6d28d9",
               border: "none",
-              color: cyan,
               fontSize: "13px",
               fontWeight: 700,
               cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
             }}
           >
-            <span>Start Audit Workspace</span>
-            <ArrowRight size={14} />
+            <span>Configure Custom Audit</span>
+            <ArrowRight size={15} />
           </button>
         </div>
 
@@ -557,43 +735,39 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           className="pillars-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: "18px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))",
+            gap: "20px",
           }}
         >
           {capabilities.map((c) => (
             <div
               key={c.id}
-              className="gemini-glass-card"
+              onClick={onStartAudit}
+              className={`vibgyor-prism-surface ${c.tintClass}`}
               style={{
-                borderRadius: "16px",
-                background: darkMode ? "rgba(17, 29, 48, 0.85)" : "rgba(255, 255, 255, 0.88)",
-                backdropFilter: "blur(20px)",
-                border: `1px solid ${borderSubtle}`,
-                padding: "24px",
+                padding: "28px",
+                borderRadius: "28px",
+                cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                transition: "all 0.18s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = borderHover;
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = borderSubtle;
-                e.currentTarget.style.transform = "none";
               }}
             >
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                  }}
+                >
                   <div
                     style={{
-                      width: "38px",
-                      height: "38px",
-                      borderRadius: "10px",
-                      background: c.bg,
-                      border: `1px solid ${c.border}`,
+                      width: "46px",
+                      height: "46px",
+                      borderRadius: "16px",
+                      background: `${c.accent}20`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -603,30 +777,59 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                   </div>
                   <span
                     style={{
-                      fontSize: "10.5px",
-                      fontWeight: 700,
-                      padding: "2px 8px",
-                      borderRadius: "6px",
-                      background: c.bg,
-                      color: c.color,
-                      border: `1px solid ${c.border}`,
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      padding: "4px 12px",
+                      borderRadius: "9999px",
+                      background: `${c.accent}18`,
+                      color: c.accent,
                     }}
                   >
                     {c.tag}
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: "16px", fontWeight: 700, color: textPrimary, margin: "0 0 8px 0" }}>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 800,
+                    color: textPrimary,
+                    margin: "0 0 10px 0",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   {c.title}
                 </h3>
-                <p style={{ fontSize: "13px", color: textSecondary, lineHeight: 1.55, margin: 0 }}>
+                <p
+                  style={{
+                    fontSize: "13.5px",
+                    color: textSecondary,
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
                   {c.desc}
                 </p>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "22px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: c.accent,
+                }}
+              >
+                <span>Inspect with this lens</span>
+                <ArrowRight size={13} />
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

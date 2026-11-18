@@ -20,7 +20,6 @@ import {
   FileText,
   History,
   Loader2,
-  ArrowLeft,
   PlusCircle,
   FolderOpen,
 } from "lucide-react";
@@ -29,7 +28,6 @@ type ViewState = "landing" | "workspace" | "dashboard" | "history";
 type TabKey = "overview" | "graph" | "score" | "findings" | "negspace" | "reports" | "history";
 
 export const App: React.FC = () => {
-  // Theme state
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem("traceguard-theme");
@@ -48,10 +46,7 @@ export const App: React.FC = () => {
 
   const handleToggleTheme = () => setDarkMode((d) => !d);
 
-  // App Navigation View
   const [currentView, setCurrentView] = useState<ViewState>("landing");
-
-  // Audit state
   const [currentAuditId, setCurrentAuditId] = useState<string | null>(null);
   const [auditStatus, setAuditStatus] = useState<AuditStatus | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -74,7 +69,6 @@ export const App: React.FC = () => {
     setGraphView("2d");
   };
 
-  // Health check and initial audits count
   useEffect(() => {
     traceguardApi
       .health()
@@ -82,12 +76,11 @@ export const App: React.FC = () => {
       .catch(() => setServerHealth(false));
 
     traceguardApi
-      .listAudits(undefined, undefined, 1)
+      .listAudits(undefined, undefined, 100)
       .then((res) => setTotalAuditsCount(res.length))
       .catch(() => {});
   }, []);
 
-  // Polling audit lifecycle
   useEffect(() => {
     if (!currentAuditId || !polling) return;
 
@@ -142,12 +135,10 @@ export const App: React.FC = () => {
       setAuditStatus(statusRes);
       if (statusRes.repo_path) setSelectedRepo(statusRes.repo_path);
 
-      // Fetch historical findings from SQLite
       const fRes = await traceguardApi.getFindings(auditId, 1, 150);
       setFindings(fRes.findings || []);
       setTotalFindings(fRes.total || (fRes.findings ? fRes.findings.length : 0));
 
-      // Fetch historical graph from SQLite
       try {
         const gRes = await traceguardApi.getGraph(auditId);
         if (gRes.nodes) setGraphNodes(gRes.nodes);
@@ -163,25 +154,25 @@ export const App: React.FC = () => {
     }
   };
 
-  // Color tokens
-  const cyan = darkMode ? "#38bdf8" : "#0284c7";
-  const purple = darkMode ? "#a855f7" : "#7c3aed";
-  const emerald = darkMode ? "#10b981" : "#059669";
-  const rose = darkMode ? "#f43f5e" : "#dc2626";
   const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
-  const textSecondary = darkMode ? "#94a3b8" : "#475569";
-  const textMuted = darkMode ? "#64748b" : "#94a3b8";
-  const cardBorder = darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
-  const cardBg = darkMode ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)";
+  const textSecondary = darkMode ? "#cbd5e1" : "#334155";
+  const textMuted = darkMode ? "#94a3b8" : "#64748b";
 
-  const tabs: Array<{ key: TabKey; label: string; icon: React.ElementType; badge?: number }> = [
-    { key: "overview", label: "Overview", icon: LayoutDashboard },
-    { key: "graph", label: "Architecture Graph", icon: Globe2 },
-    { key: "score", label: "Integrity Assessment", icon: BarChart3 },
-    { key: "findings", label: "Findings", icon: ShieldAlert, badge: findings.length },
-    { key: "negspace", label: "Negative-Space Gaps", icon: Puzzle },
-    { key: "reports", label: "Reports & Exports", icon: FileText },
-    { key: "history", label: "Audit History", icon: History },
+  // 7 VIBGYOR-accented Intelligence Lenses
+  const tabs: Array<{
+    key: TabKey;
+    label: string;
+    icon: React.ElementType;
+    accent: string;
+    badge?: number;
+  }> = [
+    { key: "overview", label: "Overview", icon: LayoutDashboard, accent: "#8b5cf6" },
+    { key: "graph", label: "Graph Architecture", icon: Globe2, accent: "#6366f1" },
+    { key: "score", label: "Integrity Radar", icon: BarChart3, accent: "#3b82f6" },
+    { key: "findings", label: "Findings", icon: ShieldAlert, accent: "#f43f5e", badge: findings.length },
+    { key: "negspace", label: "Negative Space", icon: Puzzle, accent: "#f97316" },
+    { key: "reports", label: "Exports", icon: FileText, accent: "#10b981" },
+    { key: "history", label: "Audit History", icon: History, accent: "#eab308" },
   ];
 
   const repoName = auditStatus?.repo_path
@@ -190,16 +181,18 @@ export const App: React.FC = () => {
 
   return (
     <>
-      {/* Google Gemini-Style Living Atmospheric Aurora Background */}
+      {/* Living VIBGYOR Atmospheric Aurora Canvas */}
       <div className="gemini-ambient-bg" aria-hidden="true">
         <div className="aurora-floating-orb orb-1" />
         <div className="aurora-floating-orb orb-2" />
         <div className="aurora-floating-orb orb-3" />
         <div className="aurora-floating-orb orb-4" />
+        <div className="aurora-floating-orb orb-5" />
+        <div className="aurora-floating-orb orb-6" />
       </div>
 
       <div className="app-main-layout">
-        {/* Universal Clean Header */}
+        {/* Floating Unified Spectral Navbar */}
         <CyberHeader
           serverHealth={serverHealth}
           darkMode={darkMode}
@@ -207,412 +200,400 @@ export const App: React.FC = () => {
           onNavigateLanding={() => setCurrentView("landing")}
           onNavigateWorkspace={() => setCurrentView("workspace")}
           onNavigateHistory={() => setCurrentView("history")}
+          onNavigateDashboard={
+            auditStatus ? () => setCurrentView("dashboard") : undefined
+          }
+          hasActiveAudit={Boolean(auditStatus)}
+          activeScore={auditStatus?.overall_score}
           currentView={currentView}
         />
 
-      {/* ======================================================== */}
-      {/* 1. PRODUCT LANDING PAGE VIEW                            */}
-      {/* ======================================================== */}
-      {currentView === "landing" && (
-        <LandingHero
-          onStartAudit={() => setCurrentView("workspace")}
-          onViewHistory={() => setCurrentView("history")}
-          onExploreCapabilities={() => setCurrentView("workspace")}
-          darkMode={darkMode}
-          totalAuditsCount={totalAuditsCount}
-        />
-      )}
+        {/* ======================================================== */}
+        {/* 1. OPEN SPATIAL LANDING STREAM                          */}
+        {/* ======================================================== */}
+        {currentView === "landing" && (
+          <LandingHero
+            onStartAudit={() => setCurrentView("workspace")}
+            onViewHistory={() => setCurrentView("history")}
+            onExploreCapabilities={() => setCurrentView("workspace")}
+            onQuickLaunchRepo={(path) => {
+              setSelectedRepo(path);
+              setCurrentView("workspace");
+            }}
+            darkMode={darkMode}
+            totalAuditsCount={totalAuditsCount}
+          />
+        )}
 
-      {/* ======================================================== */}
-      {/* 2. DEDICATED AUDIT WORKSPACE VIEW                       */}
-      {/* ======================================================== */}
-      {currentView === "workspace" && (
-        <>
-          {/* Scanning Progress Bar when running */}
-          {polling && auditStatus?.status === "running" && (
+        {/* ======================================================== */}
+        {/* 2. STUDIO AUDIT LAUNCHPAD STREAM                        */}
+        {/* ======================================================== */}
+        {currentView === "workspace" && (
+          <>
+            {polling && auditStatus?.status === "running" && (
+              <div
+                className="vibgyor-prism-surface animate-reveal"
+                style={{
+                  borderRadius: "26px",
+                  padding: "18px 24px",
+                  marginBottom: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                <Loader2
+                  size={24}
+                  color="#8b5cf6"
+                  style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: 800,
+                      fontSize: "14.5px",
+                      color: textPrimary,
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Parsing AST, Resolving Cross-File Taint &amp; Traversing ERCG Consistency Graph…
+                  </div>
+                  <div style={{ fontSize: "12px", color: textMuted }}>
+                    Audit ID: {currentAuditId} · Target: {selectedRepo}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <AuditWorkspace
+              onBackToLanding={() => setCurrentView("landing")}
+              onAuditStarted={handleAuditStarted}
+              repoPath={selectedRepo}
+              setRepoPath={setSelectedRepo}
+              darkMode={darkMode}
+              isScanning={polling}
+            />
+          </>
+        )}
+
+        {/* ======================================================== */}
+        {/* 3. LIVE INTELLIGENCE DASHBOARD STREAM                   */}
+        {/* ======================================================== */}
+        {currentView === "dashboard" && auditStatus && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+            {/* Open Spectral Context Header (Zero Box) */}
             <div
+              className="animate-reveal"
               style={{
-                background: `${cyan}18`,
-                border: `1px solid ${cyan}44`,
-                borderRadius: "14px",
-                padding: "16px 20px",
-                marginBottom: "24px",
                 display: "flex",
-                alignItems: "center",
-                gap: "14px",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                flexWrap: "wrap",
+                gap: "16px",
               }}
             >
-              <Loader2
-                size={22}
-                color={cyan}
-                style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: "14px", color: cyan, marginBottom: "2px" }}>
-                  Analyzing AST, Extracting Symbols &amp; Traversing ERCG Consistency Graph…
-                </div>
-                <div style={{ fontSize: "12px", color: textMuted }}>
-                  Audit ID: {currentAuditId} • Target: {selectedRepo}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <AuditWorkspace
-            onBackToLanding={() => setCurrentView("landing")}
-            onAuditStarted={handleAuditStarted}
-            repoPath={selectedRepo}
-            setRepoPath={setSelectedRepo}
-            darkMode={darkMode}
-            isScanning={polling}
-          />
-        </>
-      )}
-
-      {/* ======================================================== */}
-      {/* 3. DEDICATED AUDIT RESULTS DASHBOARD VIEW               */}
-      {/* ======================================================== */}
-      {currentView === "dashboard" && auditStatus && (
-        <div>
-          {/* Active Audit Context & Action Bar */}
-          <div
-            className="dashboard-header-bar"
-            style={{
-              background: cardBg,
-              backdropFilter: "blur(16px)",
-              border: `1px solid ${cardBorder}`,
-              borderRadius: "16px",
-              padding: "16px 22px",
-              marginBottom: "20px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "14px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <button
-                onClick={() => setCurrentView("workspace")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "10px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  background: `${cyan}15`,
-                  border: `1px solid ${cyan}33`,
-                  color: cyan,
-                  cursor: "pointer",
-                }}
-              >
-                <PlusCircle size={14} />
-                <span>New Audit</span>
-              </button>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <FolderOpen size={16} color={cyan} />
-                <span style={{ fontSize: "16px", fontWeight: 700, color: textPrimary }}>
-                  {repoName}
-                </span>
-                <span
+              <div>
+                <div
                   style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                    borderRadius: "9999px",
-                    background: `${emerald}20`,
-                    color: emerald,
-                    border: `1px solid ${emerald}40`,
-                  }}
-                >
-                  Score: {auditStatus.overall_score != null ? auditStatus.overall_score.toFixed(1) : "100.0"}/100
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "12px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
-                ID: {currentAuditId ? currentAuditId.slice(0, 16) : ""}…
-              </span>
-              <button
-                onClick={() => setCurrentView("history")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
-                  border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
-                  color: textSecondary,
-                  cursor: "pointer",
-                }}
-              >
-                <History size={13} color={purple} />
-                <span>All Audits</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 7 Clean Navigation Tabs */}
-          <div
-            className="dashboard-tabs-container no-scrollbar"
-            style={{
-              display: "flex",
-              gap: "8px",
-              borderBottom: `1px solid ${cardBorder}`,
-              paddingBottom: "12px",
-              marginBottom: "24px",
-              overflowX: "auto",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeDashboardTab === tab.key;
-
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveDashboardTab(tab.key)}
-                  style={{
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
                     gap: "8px",
-                    padding: "10px 16px",
-                    borderRadius: "10px",
-                    fontSize: "13px",
-                    fontWeight: isActive ? 700 : 500,
-                    background: isActive
-                      ? `${cyan}22`
-                      : darkMode
-                      ? "rgba(15, 23, 42, 0.5)"
-                      : "rgba(241, 245, 249, 0.6)",
-                    border: isActive
-                      ? `1px solid ${cyan}66`
-                      : `1px solid ${cardBorder}`,
-                    color: isActive ? cyan : darkMode ? "#94a3b8" : "#475569",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    whiteSpace: "nowrap",
+                    fontSize: "11.5px",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "#8b5cf6",
+                    marginBottom: "6px",
                   }}
                 >
-                  <Icon size={16} color={isActive ? cyan : textMuted} />
-                  <span>{tab.label}</span>
-                  {tab.badge !== undefined && tab.badge > 0 && (
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        padding: "1px 6px",
-                        borderRadius: "9999px",
-                        background: `${cyan}33`,
-                        color: cyan,
-                      }}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Active Tab View */}
-          {activeDashboardTab === "overview" && (
-            <OverviewDashboard
-              status={auditStatus}
-              findings={findings}
-              onNavigateTab={(tab) => setActiveDashboardTab(tab)}
-              darkMode={darkMode}
-              auditId={currentAuditId || undefined}
-              onViewInGraph={handleViewInGraph}
-            />
-          )}
-
-          {activeDashboardTab === "graph" && (
-            <div style={{ marginBottom: "28px" }}>
-              {/* 2D / 3D Switch Toolbar */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "16px",
-                  flexWrap: "wrap",
-                  gap: "10px",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <button
-                    onClick={() => setGraphView("2d")}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 16px",
-                      borderRadius: "10px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      background: graphView === "2d" ? `${cyan}25` : darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
-                      border: graphView === "2d" ? `1.5px solid ${cyan}` : `1px solid ${cardBorder}`,
-                      color: graphView === "2d" ? cyan : textSecondary,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <span>🗺️ 2D Architecture Graph</span>
-                  </button>
-                  <button
-                    onClick={() => setGraphView("3d")}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 16px",
-                      borderRadius: "10px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      background: graphView === "3d" ? `${cyan}25` : darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
-                      border: graphView === "3d" ? `1.5px solid ${cyan}` : `1px solid ${cardBorder}`,
-                      color: graphView === "3d" ? cyan : textSecondary,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <span>🌐 3D Consistency Map</span>
-                  </button>
+                  <FolderOpen size={14} />
+                  <span>Active Intelligence Session · {currentAuditId?.slice(0, 12)}</span>
                 </div>
-
-                <div style={{ fontSize: "12px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
-                  {graphNodes.length} ERCG symbols · {graphEdges.length} verified edges
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                  <h1
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(26px, 3.6vw, 40px)",
+                      fontWeight: 800,
+                      letterSpacing: "-0.035em",
+                      color: textPrimary,
+                    }}
+                  >
+                    {repoName}
+                  </h1>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      padding: "5px 14px",
+                      borderRadius: "9999px",
+                      background: "rgba(16, 185, 129, 0.16)",
+                      color: "#10b981",
+                    }}
+                  >
+                    Integrity{" "}
+                    {auditStatus.overall_score != null
+                      ? auditStatus.overall_score.toFixed(1)
+                      : "100.0"}{" "}
+                    / 100
+                  </span>
                 </div>
               </div>
 
-              {graphView === "2d" ? (
-                <ArchitectureGraph2D
-                  nodes={graphNodes}
-                  edges={graphEdges}
-                  findings={findings}
-                  highlightedNodeId={highlightedGraphNode}
-                  onToggle3D={() => setGraphView("3d")}
-                  darkMode={darkMode}
-                />
-              ) : (
-                <ConsistencyGraph3D
-                  nodes={graphNodes}
-                  edges={graphEdges}
-                  findings={findings}
-                  onSelectNode={() => setActiveDashboardTab("findings")}
-                  darkMode={darkMode}
-                  auditId={currentAuditId || undefined}
-                />
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setCurrentView("workspace")}
+                  className="vibgyor-cta-btn"
+                  style={{ padding: "10px 20px", fontSize: "13px" }}
+                >
+                  <PlusCircle size={15} />
+                  <span>New Audit</span>
+                </button>
+              </div>
             </div>
-          )}
 
-          {activeDashboardTab === "score" && (
-            <IntegrityScoreRadar status={auditStatus} darkMode={darkMode} />
-          )}
-
-          {activeDashboardTab === "findings" && (
-            <FindingsExplorer
-              findings={findings}
-              total={totalFindings}
-              auditId={currentAuditId || ""}
-              darkMode={darkMode}
-              onViewInGraph={handleViewInGraph}
-            />
-          )}
-
-          {activeDashboardTab === "negspace" && (
-            <NegativeSpaceView
-              findings={findings}
-              darkMode={darkMode}
-              auditId={currentAuditId || ""}
-              onViewInGraph={handleViewInGraph}
-            />
-          )}
-
-          {activeDashboardTab === "reports" && currentAuditId && (
-            <ReportsExportView auditId={currentAuditId} darkMode={darkMode} />
-          )}
-
-          {activeDashboardTab === "history" && (
-            <AuditHistory
-              currentAuditId={currentAuditId}
-              onLoadAudit={handleLoadHistoricalAudit}
-              darkMode={darkMode}
-            />
-          )}
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* 4. DEDICATED AUDIT HISTORY VIEW                         */}
-      {/* ======================================================== */}
-      {currentView === "history" && (
-        <div>
-          <div style={{ marginBottom: "16px" }}>
-            <button
-              onClick={() => setCurrentView(auditStatus ? "dashboard" : "landing")}
+            {/* Floating VIBGYOR Pill Mode Switcher */}
+            <div
+              className="vibgyor-prism-surface no-scrollbar"
               style={{
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
-                gap: "8px",
-                padding: "8px 14px",
-                borderRadius: "10px",
-                fontSize: "13px",
-                fontWeight: 600,
-                background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
-                border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
-                color: textPrimary,
-                cursor: "pointer",
+                gap: "6px",
+                padding: "8px 12px",
+                borderRadius: "9999px",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
               }}
             >
-              <ArrowLeft size={16} />
-              <span>Back to {auditStatus ? "Dashboard" : "Home"}</span>
-            </button>
-          </div>
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeDashboardTab === tab.key;
 
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveDashboardTab(tab.key)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "9px 18px",
+                      borderRadius: "9999px",
+                      fontSize: "13px",
+                      fontWeight: isActive ? 800 : 600,
+                      background: isActive ? tab.accent : "transparent",
+                      border: "none",
+                      color: isActive ? "#ffffff" : textSecondary,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      boxShadow: isActive ? `0 6px 18px -4px ${tab.accent}88` : "none",
+                    }}
+                  >
+                    <Icon size={15} color={isActive ? "#ffffff" : tab.accent} />
+                    <span>{tab.label}</span>
+                    {tab.badge !== undefined && tab.badge > 0 && (
+                      <span
+                        style={{
+                          fontSize: "10.5px",
+                          fontWeight: 800,
+                          padding: "1px 7px",
+                          borderRadius: "9999px",
+                          background: isActive ? "rgba(255,255,255,0.25)" : `${tab.accent}22`,
+                          color: isActive ? "#ffffff" : tab.accent,
+                        }}
+                      >
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Intelligence Lens */}
+            {activeDashboardTab === "overview" && (
+              <OverviewDashboard
+                status={auditStatus}
+                findings={findings}
+                onNavigateTab={(tab) => setActiveDashboardTab(tab)}
+                darkMode={darkMode}
+                auditId={currentAuditId || undefined}
+                onViewInGraph={handleViewInGraph}
+              />
+            )}
+
+            {activeDashboardTab === "graph" && (
+              <div style={{ marginBottom: "28px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                    flexWrap: "wrap",
+                    gap: "10px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                      onClick={() => setGraphView("2d")}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "9px 18px",
+                        borderRadius: "9999px",
+                        fontSize: "12.5px",
+                        fontWeight: 800,
+                        background:
+                          graphView === "2d"
+                            ? "#8b5cf6"
+                            : darkMode
+                            ? "rgba(255, 255, 255, 0.06)"
+                            : "rgba(15, 23, 42, 0.06)",
+                        border: "none",
+                        color: graphView === "2d" ? "#ffffff" : textSecondary,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span>2D Graph Architecture</span>
+                    </button>
+                    <button
+                      onClick={() => setGraphView("3d")}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "9px 18px",
+                        borderRadius: "9999px",
+                        fontSize: "12.5px",
+                        fontWeight: 800,
+                        background:
+                          graphView === "3d"
+                            ? "#3b82f6"
+                            : darkMode
+                            ? "rgba(255, 255, 255, 0.06)"
+                            : "rgba(15, 23, 42, 0.06)",
+                        border: "none",
+                        color: graphView === "3d" ? "#ffffff" : textSecondary,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span>3D Graph Architecture</span>
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: textMuted,
+                      fontFamily: "JetBrains Mono, monospace",
+                    }}
+                  >
+                    {graphNodes.length > 0
+                      ? `Actual ERCG Data · ${graphNodes.length} ERCG symbols · ${graphEdges.length} verified edges`
+                      : "Illustrative Preview · Synthetic fallback topology"}
+                  </div>
+                </div>
+
+                {graphView === "2d" ? (
+                  <ArchitectureGraph2D
+                    nodes={graphNodes}
+                    edges={graphEdges}
+                    findings={findings}
+                    highlightedNodeId={highlightedGraphNode}
+                    onToggle3D={() => setGraphView("3d")}
+                    darkMode={darkMode}
+                  />
+                ) : (
+                  <ConsistencyGraph3D
+                    nodes={graphNodes}
+                    edges={graphEdges}
+                    findings={findings}
+                    onSelectNode={() => setActiveDashboardTab("findings")}
+                    darkMode={darkMode}
+                    auditId={currentAuditId || undefined}
+                  />
+                )}
+              </div>
+            )}
+
+            {activeDashboardTab === "score" && (
+              <IntegrityScoreRadar status={auditStatus} darkMode={darkMode} />
+            )}
+
+            {activeDashboardTab === "findings" && (
+              <FindingsExplorer
+                findings={findings}
+                total={totalFindings}
+                auditId={currentAuditId || ""}
+                darkMode={darkMode}
+                onViewInGraph={handleViewInGraph}
+              />
+            )}
+
+            {activeDashboardTab === "negspace" && (
+              <NegativeSpaceView
+                findings={findings}
+                darkMode={darkMode}
+                auditId={currentAuditId || ""}
+                onViewInGraph={handleViewInGraph}
+              />
+            )}
+
+            {activeDashboardTab === "reports" && currentAuditId && (
+              <ReportsExportView auditId={currentAuditId} darkMode={darkMode} />
+            )}
+
+            {activeDashboardTab === "history" && (
+              <AuditHistory
+                currentAuditId={currentAuditId}
+                onLoadAudit={handleLoadHistoricalAudit}
+                darkMode={darkMode}
+              />
+            )}
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* 4. DEDICATED AUDIT VAULT VIEW                           */}
+        {/* ======================================================== */}
+        {currentView === "history" && (
           <AuditHistory
             currentAuditId={currentAuditId}
             onLoadAudit={handleLoadHistoricalAudit}
             darkMode={darkMode}
           />
-        </div>
-      )}
+        )}
 
-      {/* Footer */}
-      <footer
-        style={{
-          marginTop: "54px",
-          paddingTop: "20px",
-          borderTop: `1px solid ${cardBorder}`,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: "12px",
-          color: textMuted,
-          flexWrap: "wrap",
-          gap: "8px",
-        }}
-      >
-        <div>TraceGuard • Architecture-Agnostic Structural &amp; Security Integrity Agent</div>
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-          {["Python 3.11+", "FastAPI", "NetworkX", "Tree-sitter", "Three.js", "React 18"].map((t) => (
-            <span key={t} style={{ opacity: 0.7 }}>
-              {t}
-            </span>
-          ))}
-        </div>
-      </footer>
-    </div>
-  </>
+        {/* Open Spectral Footer Ribbon */}
+        <footer style={{ marginTop: "auto", paddingTop: "48px" }}>
+          <div className="spectral-hairline" style={{ marginBottom: "20px" }} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: "12px",
+              color: textMuted,
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <div>
+              <strong style={{ color: textPrimary }}>TraceGuard</strong> · Autonomous
+              Structural &amp; Security Integrity Engine
+            </div>
+            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+              {["Python 3.11+", "FastAPI", "NetworkX ERCG", "Tree-sitter AST", "Three.js", "React 18"].map(
+                (t) => (
+                  <span key={t}>{t}</span>
+                )
+              )}
+            </div>
+          </div>
+        </footer>
+      </div>
+    </>
   );
 };

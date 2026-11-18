@@ -2,16 +2,15 @@ import React, { useState } from "react";
 import { AuditStatus, Finding } from "../api/client";
 import { FindingEvidenceModal } from "./FindingEvidenceModal";
 import {
-  ShieldAlert,
-  BarChart3,
   Globe2,
-  FileText,
-  AlertTriangle,
   CheckCircle2,
-  Clock,
   FolderOpen,
   ArrowRight,
-  TrendingUp,
+  ShieldAlert,
+  Puzzle,
+  Code2,
+  Sparkles,
+  FileCode,
 } from "lucide-react";
 
 interface OverviewDashboardProps {
@@ -26,8 +25,8 @@ interface OverviewDashboardProps {
 const scoreColor = (score?: number) => {
   if (score === undefined || score === null) return "#64748b";
   if (score >= 90) return "#10b981";
-  if (score >= 75) return "#38bdf8";
-  if (score >= 60) return "#f59e0b";
+  if (score >= 75) return "#3b82f6";
+  if (score >= 60) return "#eab308";
   return "#f43f5e";
 };
 
@@ -40,247 +39,275 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   onViewInGraph,
 }) => {
   const [evidenceFinding, setEvidenceFinding] = useState<Finding | null>(null);
-  const cyan = darkMode ? "#38bdf8" : "#0284c7";
-  const purple = darkMode ? "#a855f7" : "#7c3aed";
-  const emerald = darkMode ? "#10b981" : "#059669";
-  const rose = darkMode ? "#f43f5e" : "#dc2626";
-  const amber = darkMode ? "#f59e0b" : "#d97706";
   const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
-  const textSecondary = darkMode ? "#94a3b8" : "#475569";
-  const textMuted = darkMode ? "#64748b" : "#94a3b8";
-
-  const cardStyle: React.CSSProperties = {
-    background: darkMode ? "rgba(16, 26, 43, 0.82)" : "rgba(255, 255, 255, 0.85)",
-    backdropFilter: "blur(20px)",
-    WebkitBackdropFilter: "blur(20px)",
-    border: darkMode ? "1px solid rgba(56, 189, 248, 0.15)" : "1px solid rgba(255, 255, 255, 0.9)",
-    borderRadius: "16px",
-    padding: "22px",
-    boxShadow: darkMode ? "0 10px 30px rgba(0, 0, 0, 0.4)" : "0 8px 24px rgba(148, 163, 184, 0.12)",
-  };
+  const textSecondary = darkMode ? "#cbd5e1" : "#334155";
+  const textMuted = darkMode ? "#94a3b8" : "#64748b";
 
   const criticalCount = findings.filter((f) => f.severity === "critical").length;
   const highCount = findings.filter((f) => f.severity === "high").length;
   const mediumCount = findings.filter((f) => f.severity === "medium").length;
   const lowCount = findings.filter((f) => f.severity === "low" || f.severity === "info").length;
 
-  const repoName = status.repo_path ? status.repo_path.split(/[/\\]/).pop() : "Repository";
-
   const topCriticalFindings = findings
     .filter((f) => f.severity === "critical" || f.severity === "high")
-    .slice(0, 4);
+    .slice(0, 5);
+
+  const overall = status.overall_score ?? 100;
+  const qualityCombined =
+    status.code_quality_score != null
+      ? status.code_quality_score * 0.67 + (status.development_hygiene_score || 100) * 0.33
+      : 100;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* Top Banner: Repo & Summary */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+      {/* ====================================================================
+          1. SPECTRAL 4-AXIS METRIC LENSES (Soft VIBGYOR Prism Interiors)
+         ==================================================================== */}
       <div
-        style={{
-          ...cardStyle,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-            <FolderOpen size={18} color={cyan} />
-            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: textPrimary }}>
-              {repoName}
-            </h2>
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                padding: "2px 8px",
-                borderRadius: "9999px",
-                background: "rgba(16, 185, 129, 0.15)",
-                color: emerald,
-                border: "1px solid rgba(16, 185, 129, 0.3)",
-              }}
-            >
-              Audit Completed
-            </span>
-          </div>
-          <div style={{ fontSize: "12px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
-            {status.repo_path}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <button
-            onClick={() => onNavigateTab("findings")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 16px",
-              borderRadius: "10px",
-              fontSize: "13px",
-              fontWeight: 600,
-              background: "rgba(56, 189, 248, 0.12)",
-              border: `1px solid ${cyan}44`,
-              color: cyan,
-              cursor: "pointer",
-            }}
-          >
-            <span>Inspect Findings</span>
-            <ArrowRight size={14} />
-          </button>
-          <button
-            onClick={() => onNavigateTab("graph")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 16px",
-              borderRadius: "10px",
-              fontSize: "13px",
-              fontWeight: 600,
-              background: "rgba(168, 85, 247, 0.12)",
-              border: `1px solid ${purple}44`,
-              color: purple,
-              cursor: "pointer",
-            }}
-          >
-            <Globe2 size={14} />
-            <span>3D Consistency Map</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4 Score Dimension Cards */}
-      <div
-        className="overview-metrics-grid"
+        className="overview-metrics-grid animate-reveal"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "16px",
+          gap: "18px",
         }}
       >
-        {/* Overall Score Card */}
+        {/* Overall Score Lens */}
         <div
+          onClick={() => onNavigateTab("score")}
+          className="vibgyor-prism-surface vib-tint-violet"
           style={{
-            ...cardStyle,
-            borderLeft: `4px solid ${scoreColor(status.overall_score)}`,
+            padding: "24px",
+            borderRadius: "28px",
+            cursor: "pointer",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
           }}
         >
           <div>
-            <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-              Overall Integrity Score
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+              }}
+            >
               <span
                 style={{
-                  fontSize: "36px",
+                  fontSize: "11px",
                   fontWeight: 800,
-                  color: scoreColor(status.overall_score),
+                  color: "#8b5cf6",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Composite Integrity
+              </span>
+              <span
+                style={{
+                  fontSize: "10.5px",
+                  fontWeight: 800,
+                  padding: "2px 10px",
+                  borderRadius: "9999px",
+                  background: `${scoreColor(overall)}22`,
+                  color: scoreColor(overall),
+                }}
+              >
+                {status.rating || "EXCELLENT"}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+              <span
+                style={{
+                  fontSize: "42px",
+                  fontWeight: 800,
+                  color: scoreColor(overall),
+                  letterSpacing: "-0.03em",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {status.overall_score != null ? status.overall_score.toFixed(1) : "—"}
+                {overall.toFixed(1)}
               </span>
-              <span style={{ fontSize: "14px", color: textMuted }}>/ 100</span>
+              <span style={{ fontSize: "14px", color: textMuted, fontWeight: 600 }}>/ 100</span>
             </div>
           </div>
-          <div style={{ marginTop: "12px", fontSize: "12px", fontWeight: 600, color: emerald }}>
-            Rating: {status.rating || "Excellent"}
+          <div style={{ marginTop: "12px", fontSize: "12px", color: textSecondary }}>
+            Weighted across 4 deterministic axes →
           </div>
         </div>
 
         {/* Security Risk (40%) */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-            Security Risk (40%)
+        <div
+          onClick={() => onNavigateTab("findings")}
+          className="vibgyor-prism-surface vib-tint-red"
+          style={{
+            padding: "24px",
+            borderRadius: "28px",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#f43f5e", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Security Risk (40%)
+              </span>
+              <ShieldAlert size={16} color="#f43f5e" />
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+              <span
+                style={{
+                  fontSize: "34px",
+                  fontWeight: 800,
+                  color: scoreColor(status.security_risk_score),
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {status.security_risk_score != null ? status.security_risk_score.toFixed(1) : "100.0"}
+              </span>
+              <span style={{ fontSize: "13px", color: textMuted }}>/ 100</span>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "8px" }}>
-            <span
-              style={{
-                fontSize: "28px",
-                fontWeight: 800,
-                color: scoreColor(status.security_risk_score),
-              }}
-            >
-              {status.security_risk_score != null ? status.security_risk_score.toFixed(1) : "100.0"}
-            </span>
-            <span style={{ fontSize: "12px", color: textMuted }}>/ 100</span>
-          </div>
-          <div style={{ marginTop: "8px", fontSize: "11px", color: textSecondary }}>
-            {criticalCount} critical, {highCount} high vulnerabilities detected
+          <div style={{ marginTop: "12px", fontSize: "12px", color: textSecondary }}>
+            {criticalCount} critical · {highCount} high vulnerabilities
           </div>
         </div>
 
         {/* Implementation Completeness (30%) */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-            Completeness (30%)
+        <div
+          onClick={() => onNavigateTab("negspace")}
+          className="vibgyor-prism-surface vib-tint-orange"
+          style={{
+            padding: "24px",
+            borderRadius: "28px",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#f97316", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Completeness (30%)
+              </span>
+              <Puzzle size={16} color="#f97316" />
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+              <span
+                style={{
+                  fontSize: "34px",
+                  fontWeight: 800,
+                  color: scoreColor(status.implementation_completeness_score),
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {status.implementation_completeness_score != null
+                  ? status.implementation_completeness_score.toFixed(1)
+                  : "100.0"}
+              </span>
+              <span style={{ fontSize: "13px", color: textMuted }}>/ 100</span>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "8px" }}>
-            <span
-              style={{
-                fontSize: "28px",
-                fontWeight: 800,
-                color: scoreColor(status.implementation_completeness_score),
-              }}
-            >
-              {status.implementation_completeness_score != null
-                ? status.implementation_completeness_score.toFixed(1)
-                : "100.0"}
-            </span>
-            <span style={{ fontSize: "12px", color: textMuted }}>/ 100</span>
-          </div>
-          <div style={{ marginTop: "8px", fontSize: "11px", color: textSecondary }}>
-            Negative-space gaps, dangling routes &amp; mock stubs
+          <div style={{ marginTop: "12px", fontSize: "12px", color: textSecondary }}>
+            Negative-space gaps &amp; mock stubs
           </div>
         </div>
 
         {/* Code Quality & Hygiene (30%) */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-            Quality &amp; Hygiene (30%)
+        <div
+          onClick={() => onNavigateTab("findings")}
+          className="vibgyor-prism-surface vib-tint-green"
+          style={{
+            padding: "24px",
+            borderRadius: "28px",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Quality &amp; Hygiene (30%)
+              </span>
+              <Code2 size={16} color="#10b981" />
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+              <span
+                style={{
+                  fontSize: "34px",
+                  fontWeight: 800,
+                  color: scoreColor(qualityCombined),
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {qualityCombined.toFixed(1)}
+              </span>
+              <span style={{ fontSize: "13px", color: textMuted }}>/ 100</span>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "8px" }}>
-            <span
-              style={{
-                fontSize: "28px",
-                fontWeight: 800,
-                color: scoreColor(
-                  status.code_quality_score && status.development_hygiene_score
-                    ? (status.code_quality_score * 0.2 + status.development_hygiene_score * 0.1) / 0.3
-                    : 100
-                ),
-              }}
-            >
-              {status.code_quality_score != null
-                ? (status.code_quality_score * 0.67 + (status.development_hygiene_score || 100) * 0.33).toFixed(1)
-                : "100.0"}
-            </span>
-            <span style={{ fontSize: "12px", color: textMuted }}>/ 100</span>
-          </div>
-          <div style={{ marginTop: "8px", fontSize: "11px", color: textSecondary }}>
-            Redundant code, blind exceptions &amp; loose ends
+          <div style={{ marginTop: "12px", fontSize: "12px", color: textSecondary }}>
+            Slop elimination &amp; exception hygiene
           </div>
         </div>
       </div>
 
-      {/* Severity Breakdown Bar + Top Findings */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-        {/* Severity Distribution */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: "14px", fontWeight: 700, color: textPrimary, marginBottom: "16px" }}>
-            Findings by Severity ({findings.length} total)
+      {/* ====================================================================
+          2. SEVERITY SPECTRUM STREAM & PRIORITY EVIDENCE LENSES
+         ==================================================================== */}
+      <div
+        className="overview-split-grid animate-reveal-delay-1"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "0.9fr 1.1fr",
+          gap: "24px",
+          alignItems: "start",
+        }}
+      >
+        {/* Left: VIBGYOR Severity Distribution Lens */}
+        <div className="vibgyor-prism-surface" style={{ padding: "28px", borderRadius: "30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 800, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Spectrum Distribution
+              </div>
+              <h3 style={{ margin: "4px 0 0 0", fontSize: "19px", fontWeight: 800, color: textPrimary }}>
+                {findings.length} Total Findings
+              </h3>
+            </div>
+            <button
+              onClick={() => onNavigateTab("graph")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "9999px",
+                fontSize: "12px",
+                fontWeight: 700,
+                background: "rgba(139, 92, 246, 0.14)",
+                color: "#8b5cf6",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Globe2 size={14} />
+              <span>Open Topology</span>
+            </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {[
-              { label: "Critical", count: criticalCount, color: rose, bg: `${rose}18` },
-              { label: "High", count: highCount, color: amber, bg: `${amber}18` },
-              { label: "Medium", count: mediumCount, color: cyan, bg: `${cyan}18` },
-              { label: "Low / Info", count: lowCount, color: emerald, bg: `${emerald}18` },
+              { label: "Critical Severity", count: criticalCount, color: "#f43f5e" },
+              { label: "High Severity", count: highCount, color: "#f97316" },
+              { label: "Medium Severity", count: mediumCount, color: "#eab308" },
+              { label: "Low & Informational", count: lowCount, color: "#10b981" },
             ].map((sev) => {
               const pct = findings.length > 0 ? (sev.count / findings.length) * 100 : 0;
               return (
@@ -289,20 +316,20 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      fontSize: "12px",
-                      marginBottom: "4px",
+                      fontSize: "13px",
+                      marginBottom: "6px",
                     }}
                   >
-                    <span style={{ fontWeight: 600, color: textSecondary }}>{sev.label}</span>
-                    <span style={{ fontWeight: 700, color: sev.color }}>
+                    <span style={{ fontWeight: 700, color: textSecondary }}>{sev.label}</span>
+                    <span style={{ fontWeight: 800, color: sev.color }}>
                       {sev.count} ({pct.toFixed(0)}%)
                     </span>
                   </div>
                   <div
                     style={{
-                      height: "6px",
-                      borderRadius: "3px",
-                      background: darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
+                      height: "8px",
+                      borderRadius: "9999px",
+                      background: darkMode ? "rgba(255, 255, 255, 0.06)" : "rgba(15, 23, 42, 0.06)",
                       overflow: "hidden",
                     }}
                   >
@@ -310,9 +337,9 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
                       style={{
                         width: `${pct}%`,
                         height: "100%",
-                        background: sev.color,
-                        borderRadius: "3px",
-                        transition: "width 0.4s ease",
+                        background: `linear-gradient(90deg, ${sev.color}99, ${sev.color})`,
+                        borderRadius: "9999px",
+                        transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
                       }}
                     />
                   </div>
@@ -322,111 +349,113 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
           </div>
         </div>
 
-        {/* Priority Findings to Address */}
-        <div style={cardStyle}>
+        {/* Right: Priority Findings Stream */}
+        <div className="vibgyor-prism-surface" style={{ padding: "28px", borderRadius: "30px" }}>
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "14px",
+              marginBottom: "18px",
             }}
           >
-            <span style={{ fontSize: "14px", fontWeight: 700, color: textPrimary }}>
-              Critical &amp; High Findings
-            </span>
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 800, color: "#f43f5e", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Immediate Remediation Stream
+              </div>
+              <h3 style={{ margin: "4px 0 0 0", fontSize: "19px", fontWeight: 800, color: textPrimary }}>
+                Critical &amp; High Priority Evidence
+              </h3>
+            </div>
             <button
               onClick={() => onNavigateTab("findings")}
               style={{
-                fontSize: "12px",
-                color: cyan,
+                fontSize: "12.5px",
+                color: "#8b5cf6",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
-                fontWeight: 600,
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
               }}
             >
-              View all ({findings.length}) →
+              <span>Inspect All ({findings.length})</span>
+              <ArrowRight size={14} />
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {topCriticalFindings.length === 0 ? (
-              <div style={{ fontSize: "13px", color: emerald, padding: "20px 0", textAlign: "center" }}>
-                <CheckCircle2 size={24} style={{ marginBottom: "6px", display: "inline-block" }} />
-                <div>No critical or high findings detected!</div>
+              <div style={{ fontSize: "13.5px", color: "#10b981", padding: "28px 0", textAlign: "center" }}>
+                <CheckCircle2 size={28} style={{ marginBottom: "8px", display: "inline-block" }} />
+                <div style={{ fontWeight: 700 }}>Zero critical or high defects detected!</div>
               </div>
             ) : (
-              topCriticalFindings.map((f) => (
-                <div
-                  key={f.id}
-                  onClick={() => setEvidenceFinding(f)}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    background: darkMode ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
-                    border: darkMode ? "1px solid rgba(255, 255, 255, 0.05)" : "1px solid rgba(0, 0, 0, 0.05)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "10px",
-                    transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.transform = "scale(1.01)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 12px ${f.severity === "critical" ? "rgba(244,63,94,0.25)" : "rgba(249,115,22,0.25)"}`;
-                    (e.currentTarget as HTMLDivElement).style.borderColor = f.severity === "critical" ? "rgba(244,63,94,0.4)" : "rgba(249,115,22,0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-                    (e.currentTarget as HTMLDivElement).style.borderColor = darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
-                  }}
-                >
-                  <div style={{ overflow: "hidden" }}>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: textPrimary,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {f.title}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: textMuted,
-                        fontFamily: "JetBrains Mono, monospace",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {f.affected_file}:{f.line_number}
-                    </div>
-                  </div>
-                  <span
+              topCriticalFindings.map((f, idx) => {
+                const isCrit = f.severity === "critical";
+                const accent = isCrit ? "#f43f5e" : "#f97316";
+                const tint = isCrit ? "vib-tint-red" : "vib-tint-orange";
+                return (
+                  <div
+                    key={f.id || idx}
+                    onClick={() => setEvidenceFinding(f)}
+                    className={`vibgyor-prism-surface ${tint}`}
                     style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      background: f.severity === "critical" ? `${rose}22` : `${amber}22`,
-                      color: f.severity === "critical" ? rose : amber,
-                      border: `1px solid ${f.severity === "critical" ? rose : amber}44`,
-                      flexShrink: 0,
+                      padding: "14px 18px",
+                      borderRadius: "20px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
                     }}
                   >
-                    {f.severity}
-                  </span>
-                </div>
-              ))
+                    <div style={{ overflow: "hidden" }}>
+                      <div
+                        style={{
+                          fontSize: "13.5px",
+                          fontWeight: 700,
+                          color: textPrimary,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {f.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "11.5px",
+                          color: textMuted,
+                          fontFamily: "JetBrains Mono, monospace",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {f.affected_file}:{f.line_number}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          padding: "3px 9px",
+                          borderRadius: "9999px",
+                          background: `${accent}22`,
+                          color: accent,
+                        }}
+                      >
+                        {f.severity}
+                      </span>
+                      <FileCode size={15} color={accent} />
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

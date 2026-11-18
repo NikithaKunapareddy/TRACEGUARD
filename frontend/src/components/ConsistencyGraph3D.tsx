@@ -250,12 +250,25 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
     const list: GraphNode[] = [];
     const seenIds = new Set<string>();
 
-    // A. Backend Symbols
+    // A. Backend Symbols (with clean display labels & filtered benchmark harness metadata)
+    const IGNORED_META = new Set(["traps_to_reject", "known_defects"]);
     if (nodes && nodes.length > 0) {
       nodes.forEach((n) => {
+        const rawName = (n.name || "").trim();
+        if (IGNORED_META.has(rawName.toLowerCase())) return;
+        if (n.file && n.file.toLowerCase().includes("ground_truth.json")) return;
+        let cleanName = rawName;
+        let cleanKind = n.kind || "component";
+        if (rawName.startsWith("fn:")) {
+          cleanName = `${rawName.slice(3)}()`;
+          if (!cleanKind || cleanKind === "node" || cleanKind === "component") cleanKind = "function";
+        } else if (rawName.startsWith("mod:")) {
+          cleanName = rawName.slice(4);
+          if (!cleanKind || cleanKind === "node" || cleanKind === "component") cleanKind = "module";
+        }
         if (!seenIds.has(n.id)) {
           seenIds.add(n.id);
-          list.push(n);
+          list.push({ ...n, name: cleanName, kind: cleanKind });
         }
       });
     }
@@ -377,8 +390,8 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    camera.position.set(0, 0, 95);
+    const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 126);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -454,7 +467,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
 
     const nodeCoords = new Map<string, THREE.Vector3>();
     const total = allNodes.length;
-    const sphereRadius = 38;
+    const sphereRadius = 32;
 
     // Distribute nodes using Spherical Golden Spiral
     allNodes.forEach((node, idx) => {
@@ -804,7 +817,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
 
   const handleResetCamera = () => {
     if (cameraRef.current) {
-      cameraRef.current.position.set(0, 0, 95);
+      cameraRef.current.position.set(0, 0, 126);
       cameraRef.current.lookAt(0, 0, 0);
     }
   };
@@ -827,66 +840,55 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
   return (
     <div
       style={{
-        position: "relative",
         width: "100%",
-        height: "clamp(400px, 60vh, 600px)",
-        borderRadius: "18px",
+        borderRadius: "24px",
         overflow: "hidden",
-        touchAction: "none",
-        border: darkMode ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid #cbd5e1",
+        border: darkMode ? "1px solid rgba(56, 189, 248, 0.22)" : "1px solid #cbd5e1",
         background: darkMode
           ? "radial-gradient(circle at 50% 50%, #0d1838 0%, #050914 100%)"
           : "radial-gradient(circle at 50% 45%, #ffffff 0%, #f1f5f9 65%, #e2e8f0 100%)",
-        backgroundImage: !darkMode
-          ? "radial-gradient(circle, rgba(2, 132, 199, 0.08) 1.2px, transparent 1.2px)"
-          : undefined,
-        backgroundSize: !darkMode ? "28px 28px" : undefined,
         boxShadow: darkMode
           ? "0 20px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08)"
           : "0 10px 30px rgba(15, 23, 42, 0.08)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {/* Three.js Canvas Mount */}
-      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
-
-      {/* ── Top HUD Controls & Category Filters ──────────────────────────────── */}
+      {/* ── Dedicated Top Header Bar (Never Overlaps 3D Canvas) ────────────── */}
       <div
         style={{
-          position: "absolute",
-          top: "16px",
-          left: "20px",
-          right: "20px",
+          padding: "12px 18px",
+          background: darkMode ? "rgba(15, 23, 42, 0.9)" : "#ffffff",
+          backdropFilter: "blur(16px)",
+          borderBottom: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "10px",
           zIndex: 10,
-          pointerEvents: "none",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", pointerEvents: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           {/* Title Pill */}
           <div
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.88)" : "#ffffff",
-              backdropFilter: "blur(14px)",
-              border: darkMode ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid #cbd5e1",
-              padding: "8px 14px",
+              background: darkMode ? "rgba(255, 255, 255, 0.04)" : "#f8fafc",
+              border: darkMode ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid #cbd5e1",
+              padding: "6px 12px",
               borderRadius: "10px",
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              boxShadow: darkMode ? "0 4px 14px rgba(0,0,0,0.2)" : "0 4px 14px rgba(15, 23, 42, 0.08)",
             }}
           >
-            <Globe2 size={16} color={darkMode ? "#00f0ff" : "#0284c7"} />
-            <span style={{ fontSize: "13px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
-              ERCG 3D Consistency Map
+            <Globe2 size={15} color={darkMode ? "#00f0ff" : "#0284c7"} />
+            <span style={{ fontSize: "12.5px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
+              3D Graph Architecture
             </span>
             <span
               style={{
-                fontSize: "11px",
+                fontSize: "10.5px",
                 padding: "2px 8px",
                 borderRadius: "9999px",
                 background: darkMode ? "rgba(0, 240, 255, 0.15)" : "rgba(2, 132, 199, 0.12)",
@@ -894,7 +896,9 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
                 fontWeight: 700,
               }}
             >
-              {filteredNodes.length} Nodes
+              {nodes && nodes.length > 0
+                ? `Actual ERCG Data (${filteredNodes.length} Nodes)`
+                : `Illustrative Preview (${filteredNodes.length} Nodes)`}
             </span>
           </div>
 
@@ -904,12 +908,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
-              backdropFilter: "blur(14px)",
-              padding: "4px 8px",
-              borderRadius: "10px",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
-              boxShadow: darkMode ? "none" : "0 4px 14px rgba(15, 23, 42, 0.06)",
+              flexWrap: "wrap",
             }}
           >
             {[
@@ -926,10 +925,10 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   style={{
-                    background: active ? `${cat.color}25` : "transparent",
+                    background: active ? `${cat.color}25` : darkMode ? "rgba(255,255,255,0.04)" : "#f1f5f9",
                     border: active ? `1.5px solid ${cat.color}` : "1px solid transparent",
                     color: active ? cat.color : darkMode ? "#94a3b8" : "#475569",
-                    padding: "4px 10px",
+                    padding: "5px 11px",
                     borderRadius: "8px",
                     fontSize: "11.5px",
                     fontWeight: active ? 700 : 600,
@@ -949,7 +948,7 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
         </div>
 
         {/* Orbit, Zoom & Reset Toolbar */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <button
             onClick={() => setAutoRotate(!autoRotate)}
             style={{
@@ -958,20 +957,18 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
                   ? "rgba(56, 189, 248, 0.2)"
                   : "rgba(2, 132, 199, 0.15)"
                 : darkMode
-                ? "rgba(15, 23, 42, 0.85)"
-                : "#ffffff",
+                  ? "rgba(255, 255, 255, 0.05)"
+                  : "#f1f5f9",
               border: darkMode ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid #cbd5e1",
               color: darkMode ? "#f8fafc" : "#0f172a",
               borderRadius: "8px",
-              padding: "7px 12px",
+              padding: "6px 12px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              fontSize: "12px",
+              fontSize: "11.5px",
               fontWeight: 600,
-              backdropFilter: "blur(12px)",
-              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             {autoRotate ? (
@@ -986,15 +983,14 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
             onClick={handleZoomIn}
             title="Zoom In"
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #cbd5e1",
+              background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
               color: darkMode ? "#94a3b8" : "#0f172a",
               borderRadius: "8px",
-              padding: "7px 9px",
+              padding: "6px 9px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             <ZoomIn size={14} />
@@ -1004,15 +1000,14 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
             onClick={handleZoomOut}
             title="Zoom Out"
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #cbd5e1",
+              background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
               color: darkMode ? "#94a3b8" : "#0f172a",
               borderRadius: "8px",
-              padding: "7px 9px",
+              padding: "6px 9px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             <ZoomOut size={14} />
@@ -1022,18 +1017,17 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
             onClick={handleResetCamera}
             title="Reset View"
             style={{
-              background: darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff",
-              border: darkMode ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #cbd5e1",
+              background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+              border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
               color: darkMode ? "#94a3b8" : "#0f172a",
               borderRadius: "8px",
-              padding: "7px 12px",
+              padding: "6px 11px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              fontSize: "12px",
+              gap: "5px",
+              fontSize: "11.5px",
               fontWeight: 600,
-              boxShadow: darkMode ? "none" : "0 2px 8px rgba(15, 23, 42, 0.06)",
             }}
           >
             <RotateCcw size={13} /> Reset
@@ -1041,217 +1035,234 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
         </div>
       </div>
 
-      {/* ── Multi-Color Legend Overlay ───────────────────────────────────────── */}
+      {/* ── Unobstructed 3D WebGL Viewport ─────────────────────────────────── */}
       <div
         style={{
-          position: "absolute",
-          bottom: "16px",
-          left: "20px",
-          display: "flex",
-          gap: "14px",
-          zIndex: 10,
-          background: darkMode ? "rgba(15, 23, 42, 0.88)" : "#ffffff",
-          backdropFilter: "blur(14px)",
-          padding: "8px 16px",
-          borderRadius: "10px",
-          border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
-          boxShadow: darkMode ? "none" : "0 4px 14px rgba(15, 23, 42, 0.08)",
-          flexWrap: "wrap",
+          position: "relative",
+          width: "100%",
+          height: "clamp(420px, 58vh, 580px)",
+          touchAction: "none",
+          backgroundImage: !darkMode
+            ? "radial-gradient(circle, rgba(2, 132, 199, 0.08) 1.2px, transparent 1.2px)"
+            : undefined,
+          backgroundSize: !darkMode ? "28px 28px" : undefined,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#00f0ff" : "#0284c7", display: "inline-block", boxShadow: darkMode ? "0 0 8px #00f0ff" : "none" }} />
-          Route / API
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "2px", background: darkMode ? "#10b981" : "#059669", display: "inline-block", boxShadow: darkMode ? "0 0 8px #10b981" : "none" }} />
-          Database Model
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", transform: "rotate(45deg)", background: darkMode ? "#a855f7" : "#7c3aed", display: "inline-block", boxShadow: darkMode ? "0 0 8px #a855f7" : "none" }} />
-          Controller / Func
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#06b6d4" : "#0891b2", display: "inline-block" }} />
-          Interface
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f59e0b" : "#d97706", display: "inline-block" }} />
-          Config
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f43f5e" : "#dc2626", display: "inline-block", boxShadow: darkMode ? "0 0 10px #f43f5e" : "none" }} />
-          Security Defect
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f97316" : "#ea580c", display: "inline-block", boxShadow: darkMode ? "0 0 8px #f97316" : "none" }} />
-          Negative Gap
-        </div>
-      </div>
+        <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
 
-      {/* ── Hovered Node Tooltip HUD ─────────────────────────────────────────── */}
-      {hoveredNode && !selectedNode && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "16px",
-            right: "20px",
-            background: darkMode ? "rgba(15, 23, 42, 0.94)" : "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(18px)",
-            border: `1.5px solid ${hoveredStyle?.hex || "#38bdf8"}`,
-            borderRadius: "14px",
-            padding: "14px 18px",
-            maxWidth: "340px",
-            boxShadow: `0 12px 36px ${hoveredStyle?.hex || "#38bdf8"}33`,
-            zIndex: 10,
-            pointerEvents: "none",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-            <span
-              style={{
-                fontSize: "10.5px",
-                textTransform: "uppercase",
-                fontWeight: 800,
-                padding: "2px 8px",
-                borderRadius: "9999px",
-                background: `${hoveredStyle?.hex || "#38bdf8"}22`,
-                color: hoveredStyle?.hex || "#38bdf8",
-                border: `1px solid ${hoveredStyle?.hex || "#38bdf8"}55`,
-              }}
-            >
-              {hoveredStyle?.label}
-            </span>
-            <span style={{ fontSize: "11px", color: darkMode ? "#94a3b8" : "#64748b" }}>Click node to inspect</span>
-          </div>
-          <div style={{ fontSize: "14px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a", marginBottom: "4px" }}>
-            {hoveredNode.name}
-          </div>
-          {hoveredNode.file && (
-            <div style={{ fontSize: "12px", color: darkMode ? "#94a3b8" : "#475569", fontFamily: "JetBrains Mono, monospace" }}>
-              {hoveredNode.file} {hoveredNode.line ? `:${hoveredNode.line}` : ""}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Selected Node Inspector Drawer ───────────────────────────────────── */}
-      {selectedNode && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "16px",
-            right: "20px",
-            background: darkMode ? "rgba(15, 23, 42, 0.96)" : "rgba(255, 255, 255, 0.97)",
-            backdropFilter: "blur(20px)",
-            border: `1.5px solid ${selectedStyle?.hex || "#38bdf8"}`,
-            borderRadius: "16px",
-            padding: "18px 20px",
-            width: "360px",
-            boxShadow: `0 16px 44px ${selectedStyle?.hex || "#38bdf8"}44`,
-            zIndex: 15,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {/* Hovered Node Tooltip HUD */}
+        {hoveredNode && !selectedNode && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "16px",
+              right: "20px",
+              background: darkMode ? "rgba(15, 23, 42, 0.94)" : "rgba(255, 255, 255, 0.95)",
+              backdropFilter: "blur(18px)",
+              border: `1.5px solid ${hoveredStyle?.hex || "#38bdf8"}`,
+              borderRadius: "14px",
+              padding: "14px 18px",
+              maxWidth: "340px",
+              boxShadow: `0 12px 36px ${hoveredStyle?.hex || "#38bdf8"}33`,
+              zIndex: 10,
+              pointerEvents: "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
               <span
                 style={{
                   fontSize: "10.5px",
                   textTransform: "uppercase",
                   fontWeight: 800,
-                  padding: "3px 9px",
+                  padding: "2px 8px",
                   borderRadius: "9999px",
-                  background: `${selectedStyle?.hex || "#38bdf8"}25`,
-                  color: selectedStyle?.hex || "#38bdf8",
-                  border: `1px solid ${selectedStyle?.hex || "#38bdf8"}66`,
+                  background: `${hoveredStyle?.hex || "#38bdf8"}22`,
+                  color: hoveredStyle?.hex || "#38bdf8",
+                  border: `1px solid ${hoveredStyle?.hex || "#38bdf8"}55`,
                 }}
               >
-                {selectedStyle?.label}
+                {hoveredStyle?.label}
               </span>
-              {selectedNode.finding && (
+              <span style={{ fontSize: "11px", color: darkMode ? "#94a3b8" : "#64748b" }}>Click node to inspect</span>
+            </div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a", marginBottom: "4px" }}>
+              {hoveredNode.name}
+            </div>
+            {hoveredNode.file && (
+              <div style={{ fontSize: "12px", color: darkMode ? "#94a3b8" : "#475569", fontFamily: "JetBrains Mono, monospace" }}>
+                {hoveredNode.file} {hoveredNode.line ? `:${hoveredNode.line}` : ""}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Selected Node Inspector Drawer */}
+        {selectedNode && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "16px",
+              right: "20px",
+              background: darkMode ? "rgba(15, 23, 42, 0.96)" : "rgba(255, 255, 255, 0.97)",
+              backdropFilter: "blur(20px)",
+              border: `1.5px solid ${selectedStyle?.hex || "#38bdf8"}`,
+              borderRadius: "16px",
+              padding: "18px 20px",
+              width: "360px",
+              boxShadow: `0 16px 44px ${selectedStyle?.hex || "#38bdf8"}44`,
+              zIndex: 15,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span
                   style={{
-                    fontSize: "10px",
+                    fontSize: "10.5px",
+                    textTransform: "uppercase",
                     fontWeight: 800,
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    background: "rgba(244, 63, 94, 0.2)",
-                    color: "#f43f5e",
+                    padding: "3px 9px",
+                    borderRadius: "9999px",
+                    background: `${selectedStyle?.hex || "#38bdf8"}25`,
+                    color: selectedStyle?.hex || "#38bdf8",
+                    border: `1px solid ${selectedStyle?.hex || "#38bdf8"}66`,
                   }}
                 >
-                  {selectedNode.finding.severity.toUpperCase()}
+                  {selectedStyle?.label}
                 </span>
-              )}
-            </div>
-            <button
-              onClick={() => setSelectedNode(null)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: darkMode ? "#94a3b8" : "#64748b",
-                cursor: "pointer",
-                padding: "2px",
-              }}
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div style={{ fontSize: "15px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a", marginBottom: "6px" }}>
-            {selectedNode.name}
-          </div>
-
-          {selectedNode.file && (
-            <div
-              style={{
-                fontSize: "12px",
-                color: darkMode ? "#94a3b8" : "#475569",
-                fontFamily: "JetBrains Mono, monospace",
-                marginBottom: "12px",
-                background: darkMode ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.05)",
-                padding: "6px 10px",
-                borderRadius: "6px",
-              }}
-            >
-              📄 {selectedNode.file} {selectedNode.line ? `:${selectedNode.line}` : ""}
-            </div>
-          )}
-
-          {selectedNode.finding && (
-            <div style={{ marginBottom: "14px" }}>
-              <div style={{ fontSize: "12px", color: darkMode ? "#cbd5e1" : "#334155", lineHeight: 1.45, marginBottom: "10px" }}>
-                {selectedNode.finding.technical_explanation || selectedNode.finding.title}
+                {selectedNode.finding && (
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      background: "rgba(244, 63, 94, 0.2)",
+                      color: "#f43f5e",
+                    }}
+                  >
+                    {selectedNode.finding.severity.toUpperCase()}
+                  </span>
+                )}
               </div>
-
               <button
-                onClick={() => setEvidenceFinding(selectedNode.finding || null)}
+                onClick={() => setSelectedNode(null)}
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  padding: "9px 14px",
-                  borderRadius: "10px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  background: "linear-gradient(135deg, #f43f5e 0%, #a855f7 100%)",
+                  background: "transparent",
                   border: "none",
+                  color: darkMode ? "#94a3b8" : "#64748b",
                   cursor: "pointer",
-                  boxShadow: "0 4px 16px rgba(244, 63, 94, 0.4)",
+                  padding: "2px",
                 }}
               >
-                <FileCode size={14} />
-                <span>Inspect Source Evidence &amp; Fix</span>
-                <ExternalLink size={12} />
+                <X size={16} />
               </button>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* ── Source Code Evidence Modal ───────────────────────────────────────── */}
+            <div style={{ fontSize: "15px", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a", marginBottom: "6px" }}>
+              {selectedNode.name}
+            </div>
+
+            {selectedNode.file && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: darkMode ? "#94a3b8" : "#475569",
+                  fontFamily: "JetBrains Mono, monospace",
+                  marginBottom: "12px",
+                  background: darkMode ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.05)",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                }}
+              >
+                📄 {selectedNode.file} {selectedNode.line ? `:${selectedNode.line}` : ""}
+              </div>
+            )}
+
+            {selectedNode.finding && (
+              <div style={{ marginBottom: "14px" }}>
+                <div style={{ fontSize: "12px", color: darkMode ? "#cbd5e1" : "#334155", lineHeight: 1.45, marginBottom: "10px" }}>
+                  {selectedNode.finding.technical_explanation || selectedNode.finding.title}
+                </div>
+
+                <button
+                  onClick={() => setEvidenceFinding(selectedNode.finding || null)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    padding: "9px 14px",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    background: "linear-gradient(135deg, #f43f5e 0%, #a855f7 100%)",
+                    border: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 16px rgba(244, 63, 94, 0.4)",
+                  }}
+                >
+                  <FileCode size={14} />
+                  <span>Inspect Source Evidence &amp; Fix</span>
+                  <ExternalLink size={12} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Dedicated Bottom Legend Bar (Never Overlaps 3D Canvas) ─────────── */}
+      <div
+        style={{
+          padding: "10px 18px",
+          background: darkMode ? "rgba(15, 23, 42, 0.9)" : "#ffffff",
+          borderTop: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "14px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#00f0ff" : "#0284c7", display: "inline-block" }} />
+            Route / API
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "2px", background: darkMode ? "#10b981" : "#059669", display: "inline-block" }} />
+            Database Model
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", transform: "rotate(45deg)", background: darkMode ? "#a855f7" : "#7c3aed", display: "inline-block" }} />
+            Controller / Func
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#06b6d4" : "#0891b2", display: "inline-block" }} />
+            Interface
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f59e0b" : "#d97706", display: "inline-block" }} />
+            Config
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f43f5e" : "#dc2626", display: "inline-block" }} />
+            Security Defect
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: darkMode ? "#94a3b8" : "#0f172a" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: darkMode ? "#f97316" : "#ea580c", display: "inline-block" }} />
+            Negative Gap
+          </div>
+        </div>
+
+        <span style={{ fontSize: "11px", color: darkMode ? "#64748b" : "#94a3b8" }}>
+          Drag to orbit · Scroll to zoom · Click any node to inspect
+        </span>
+      </div>
+
+      {/* Source Code Evidence Modal */}
       {evidenceFinding && (
         <FindingEvidenceModal
           auditId={auditId || evidenceFinding.id}
