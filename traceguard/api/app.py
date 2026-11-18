@@ -55,7 +55,10 @@ app.add_middleware(
 
 
 # Mount static React dashboard if built
-_frontend_build = Path(__file__).resolve().parent.parent.parent / "frontend" / "build"
+_frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
+_frontend_build = _frontend_dir / "dist"
+if not (_frontend_build.exists() and (_frontend_build / "index.html").exists()):
+    _frontend_build = _frontend_dir / "build"
 if _frontend_build.exists() and (_frontend_build / "index.html").exists():
     if (_frontend_build / "assets").exists():
         app.mount("/assets", StaticFiles(directory=str(_frontend_build / "assets")), name="assets")
