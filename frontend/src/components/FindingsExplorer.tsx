@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Finding } from "../api/client";
+import { FindingEvidenceModal } from "./FindingEvidenceModal";
 import {
   ShieldAlert,
   Puzzle,
@@ -12,19 +13,46 @@ import {
   Search,
   ExternalLink,
   Code2,
+  FileCode,
+  Globe2,
 } from "lucide-react";
 
 interface FindingsExplorerProps {
   findings: Finding[];
   total: number;
+  auditId?: string;
+  darkMode?: boolean;
+  onViewInGraph?: (file: string) => void;
 }
 
-export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, total }) => {
+export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({
+  findings,
+  total,
+  auditId,
+  darkMode = true,
+  onViewInGraph,
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [hoveredSev, setHoveredSev] = useState<string | null>(null);
+  const [hoveredCat, setHoveredCat] = useState<string | null>(null);
+  const [hoveredFinding, setHoveredFinding] = useState<string | null>(null);
+  const [modalFinding, setModalFinding] = useState<Finding | null>(null);
+
+  // Dynamic color tokens
+  const panelBg = darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff";
+  const innerBg = darkMode ? "rgba(11, 17, 32, 0.6)" : "#f8fafc";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textSecondary = darkMode ? "#cbd5e1" : "#475569";
+  const textMuted = darkMode ? "#64748b" : "#94a3b8";
+  const borderBase = darkMode ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0";
+  const cyan = darkMode ? "#38bdf8" : "#0284c7";
+  const emerald = darkMode ? "#10b981" : "#059669";
+  const rose = darkMode ? "#f43f5e" : "#dc2626";
+  const purple = darkMode ? "#a855f7" : "#7c3aed";
 
   const categories = [
     { key: "all", label: "All Categories", icon: null },
@@ -121,9 +149,9 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
       {/* Top Filter & Severity Counter Bar */}
       <div
         style={{
-          background: "rgba(15, 23, 42, 0.75)",
+          background: panelBg,
           backdropFilter: "blur(16px)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          border: `1px solid ${borderBase}`,
           borderRadius: "16px",
           padding: "20px",
           marginBottom: "20px",
@@ -141,23 +169,32 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
           ].map((item) => {
             const count = countBySeverity(item.sev);
             const isSelected = selectedSeverity === item.sev;
+            const isHovered = hoveredSev === item.sev;
             return (
               <button
                 key={item.sev}
                 onClick={() => setSelectedSeverity(isSelected ? "all" : item.sev)}
+                onMouseEnter={() => setHoveredSev(item.sev)}
+                onMouseLeave={() => setHoveredSev(null)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   padding: "6px 14px",
                   borderRadius: "8px",
-                  background: isSelected ? `${item.color}25` : "rgba(11, 17, 32, 0.6)",
-                  border: isSelected ? `1px solid ${item.color}` : "1px solid rgba(255, 255, 255, 0.06)",
-                  color: isSelected ? item.color : "#cbd5e1",
+                  background: isSelected ? `${item.color}25` : innerBg,
+                  border: isSelected
+                    ? `1px solid ${item.color}`
+                    : isHovered
+                    ? `1px solid ${item.color}88`
+                    : `1px solid ${borderBase}`,
+                  color: isSelected ? item.color : isHovered ? item.color : textSecondary,
                   fontSize: "12px",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.15s ease",
+                  transform: isHovered ? "translateY(-1px)" : "none",
+                  boxShadow: isHovered ? `0 4px 12px rgba(0,0,0,0.2)` : "none",
                 }}
               >
                 <span>{item.label}</span>
@@ -192,10 +229,13 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat.key;
+              const isHovered = hoveredCat === cat.key;
               return (
                 <button
                   key={cat.key}
                   onClick={() => setSelectedCategory(cat.key)}
+                  onMouseEnter={() => setHoveredCat(cat.key)}
+                  onMouseLeave={() => setHoveredCat(null)}
                   style={{
                     padding: "6px 14px",
                     borderRadius: "8px",
@@ -204,10 +244,13 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                     background: isSelected ? "rgba(56, 189, 248, 0.15)" : "transparent",
                     border: isSelected
                       ? "1px solid #38bdf8"
-                      : "1px solid rgba(255, 255, 255, 0.06)",
-                    color: isSelected ? "#38bdf8" : "#94a3b8",
+                      : isHovered
+                      ? `1px solid rgba(56,189,248,0.4)`
+                      : `1px solid ${borderBase}`,
+                    color: isSelected ? "#38bdf8" : isHovered ? "#38bdf8" : textMuted,
                     cursor: "pointer",
                     transition: "all 0.15s ease",
+                    transform: isHovered && !isSelected ? "translateY(-1px)" : "none",
                   }}
                 >
                   {cat.label}
@@ -222,14 +265,14 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              background: "rgba(11, 17, 32, 0.8)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              background: innerBg,
+              border: `1px solid ${borderBase}`,
               borderRadius: "8px",
               padding: "6px 12px",
               minWidth: "260px",
             }}
           >
-            <Search size={14} color="#64748b" />
+            <Search size={14} color={textMuted} />
             <input
               type="text"
               placeholder="Search findings or files..."
@@ -239,7 +282,7 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                 background: "transparent",
                 border: "none",
                 outline: "none",
-                color: "#f8fafc",
+                color: textPrimary,
                 fontSize: "12px",
                 width: "100%",
               }}
@@ -255,10 +298,10 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
             style={{
               padding: "48px 24px",
               textAlign: "center",
-              background: "rgba(15, 23, 42, 0.5)",
+              background: panelBg,
               borderRadius: "14px",
-              border: "1px solid rgba(255, 255, 255, 0.05)",
-              color: "#94a3b8",
+              border: `1px solid ${borderBase}`,
+              color: textMuted,
             }}
           >
             No findings matching the selected filters.
@@ -266,19 +309,29 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
         ) : (
           filteredFindings.map((finding) => {
             const isExpanded = expandedId === finding.id;
+            const isHovered = hoveredFinding === finding.id;
             return (
               <div
                 key={finding.id}
+                onMouseEnter={() => setHoveredFinding(finding.id)}
+                onMouseLeave={() => setHoveredFinding(null)}
                 style={{
-                  background: "rgba(15, 23, 42, 0.75)",
+                  background: panelBg,
                   backdropFilter: "blur(14px)",
                   border: isExpanded
                     ? "1px solid rgba(56, 189, 248, 0.4)"
-                    : "1px solid rgba(255, 255, 255, 0.07)",
+                    : isHovered
+                    ? "1px solid rgba(56,189,248,0.3)"
+                    : `1px solid ${borderBase}`,
                   borderRadius: "14px",
                   overflow: "hidden",
                   transition: "all 0.2s ease",
-                  boxShadow: isExpanded ? "0 8px 30px rgba(0, 0, 0, 0.5)" : "none",
+                  transform: isHovered && !isExpanded ? "translateY(-1px)" : "none",
+                  boxShadow: isExpanded
+                    ? "0 8px 30px rgba(0, 0, 0, 0.5)"
+                    : isHovered
+                    ? "0 8px 24px rgba(0,0,0,0.3)"
+                    : "none",
                 }}
               >
                 {/* Header Row */}
@@ -297,22 +350,22 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                     {isExpanded ? (
                       <ChevronDown size={18} color="#38bdf8" />
                     ) : (
-                      <ChevronRight size={18} color="#64748b" />
+                      <ChevronRight size={18} color={textMuted} />
                     )}
 
                     {getSeverityBadge(finding.severity)}
                     {getLifecycleBadge(finding.lifecycle_state)}
 
-                    <div style={{ fontWeight: 700, fontSize: "14px", color: "#f8fafc" }}>
+                    <div style={{ fontWeight: 700, fontSize: "14px", color: textPrimary }}>
                       {finding.title}
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <span
                       style={{
                         fontSize: "12px",
-                        color: "#94a3b8",
+                        color: textMuted,
                         fontFamily: "JetBrains Mono, monospace",
                       }}
                     >
@@ -334,6 +387,32 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                     >
                       {finding.verification_status} ({Math.round(finding.confidence * 100)}%)
                     </span>
+
+                    {/* Direct Inspect Button on Row */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModalFinding(finding);
+                      }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        padding: "5px 10px",
+                        borderRadius: "8px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        background: darkMode ? "rgba(56, 189, 248, 0.15)" : "rgba(2, 132, 199, 0.1)",
+                        border: darkMode ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(2, 132, 199, 0.3)",
+                        color: cyan,
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      title="Inspect exact source code on disk & surrounding context"
+                    >
+                      <FileCode size={13} />
+                      <span>Inspect Code</span>
+                    </button>
                   </div>
                 </div>
 
@@ -342,10 +421,65 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                   <div
                     style={{
                       padding: "0 20px 20px 20px",
-                      borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                      borderTop: `1px solid ${borderBase}`,
                       marginTop: "4px",
                     }}
                   >
+                    {/* Action Bar inside Expanded finding */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        padding: "12px 0",
+                        borderBottom: `1px solid ${borderBase}`,
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <button
+                        onClick={() => setModalFinding(finding)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "8px 14px",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          background: darkMode ? "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)" : "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                          color: "#ffffff",
+                          border: "none",
+                          cursor: "pointer",
+                          boxShadow: `0 2px 10px ${cyan}44`,
+                        }}
+                      >
+                        <FileCode size={14} />
+                        <span>Inspect Line-by-Line Source Code Evidence</span>
+                      </button>
+
+                      {onViewInGraph && (
+                        <button
+                          onClick={() => onViewInGraph(finding.affected_file)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            background: darkMode ? "rgba(168, 85, 247, 0.15)" : "rgba(124, 58, 237, 0.1)",
+                            border: darkMode ? "1px solid rgba(168, 85, 247, 0.4)" : "1px solid rgba(124, 58, 237, 0.3)",
+                            color: purple,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Globe2 size={14} />
+                          <span>View in Architecture Graph</span>
+                        </button>
+                      )}
+                    </div>
                     {/* Code Snippet Box */}
                     {finding.snippet && (
                       <div style={{ marginTop: "16px", marginBottom: "16px" }}>
@@ -356,7 +490,7 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                             gap: "6px",
                             fontSize: "11px",
                             fontWeight: 700,
-                            color: "#64748b",
+                            color: textMuted,
                             textTransform: "uppercase",
                             marginBottom: "6px",
                           }}
@@ -393,10 +527,10 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                       {/* Technical Explanation */}
                       <div
                         style={{
-                          background: "rgba(11, 17, 32, 0.6)",
+                          background: innerBg,
                           padding: "14px",
                           borderRadius: "10px",
-                          border: "1px solid rgba(255, 255, 255, 0.05)",
+                          border: `1px solid ${borderBase}`,
                         }}
                       >
                         <div
@@ -410,7 +544,7 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                         >
                           Technical Root Cause
                         </div>
-                        <p style={{ margin: 0, fontSize: "13px", color: "#cbd5e1", lineHeight: 1.5 }}>
+                        <p style={{ margin: 0, fontSize: "13px", color: textSecondary, lineHeight: 1.5 }}>
                           {finding.technical_explanation}
                         </p>
                       </div>
@@ -418,10 +552,10 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                       {/* Potential Impact */}
                       <div
                         style={{
-                          background: "rgba(11, 17, 32, 0.6)",
+                          background: innerBg,
                           padding: "14px",
                           borderRadius: "10px",
-                          border: "1px solid rgba(255, 255, 255, 0.05)",
+                          border: `1px solid ${borderBase}`,
                         }}
                       >
                         <div
@@ -435,7 +569,7 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                         >
                           Potential Production Impact
                         </div>
-                        <p style={{ margin: 0, fontSize: "13px", color: "#cbd5e1", lineHeight: 1.5 }}>
+                        <p style={{ margin: 0, fontSize: "13px", color: textSecondary, lineHeight: 1.5 }}>
                           {finding.potential_impact}
                         </p>
                       </div>
@@ -466,7 +600,7 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                         >
                           Recommended Remediation
                         </div>
-                        <p style={{ margin: 0, fontSize: "13px", color: "#f8fafc", lineHeight: 1.5 }}>
+                        <p style={{ margin: 0, fontSize: "13px", color: textPrimary, lineHeight: 1.5 }}>
                           {finding.recommended_remediation}
                         </p>
                       </div>
@@ -505,7 +639,7 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
                     {/* Counterevidence considered */}
                     {finding.counterevidence_considered &&
                       finding.counterevidence_considered.length > 0 && (
-                        <div style={{ marginTop: "12px", fontSize: "12px", color: "#64748b" }}>
+                        <div style={{ marginTop: "12px", fontSize: "12px", color: textMuted }}>
                           <span style={{ fontWeight: 600 }}>Counterevidence Checked: </span>
                           {finding.counterevidence_considered.join(" • ")}
                         </div>
@@ -517,6 +651,16 @@ export const FindingsExplorer: React.FC<FindingsExplorerProps> = ({ findings, to
           })
         )}
       </div>
+      {/* Source Code Evidence Explorer Modal */}
+      {modalFinding && (
+        <FindingEvidenceModal
+          auditId={auditId || ""}
+          finding={modalFinding}
+          onClose={() => setModalFinding(null)}
+          onViewInGraph={onViewInGraph}
+          darkMode={darkMode}
+        />
+      )}
     </div>
   );
 };

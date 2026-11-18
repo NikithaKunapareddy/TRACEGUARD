@@ -66,6 +66,39 @@ export interface AuditStatus {
   error?: string;
 }
 
+export interface SourceCodeLine {
+  line_number: number;
+  content: string;
+  is_problematic: boolean;
+}
+
+export interface FindingSourceCode {
+  audit_id: string;
+  finding_id: string;
+  title: string;
+  severity: string;
+  category: string;
+  confidence: number;
+  verification_status: string;
+  lifecycle_state: string;
+  affected_file: string;
+  line_number: number;
+  target_line?: number;
+  end_line_number?: number;
+  file_exists: boolean;
+  language: string;
+  start_line: number;
+  end_line: number;
+  total_lines: number;
+  lines: SourceCodeLine[];
+  raw_snippet: string;
+  technical_explanation: string;
+  potential_impact: string;
+  recommended_remediation: string;
+  counterevidence_considered: string[];
+  related_nodes: string[];
+}
+
 export interface AuditHistoryItem {
   id?: string;
   audit_id: string;
@@ -174,6 +207,18 @@ export const traceguardApi = {
       `${BASE_URL}/api/v1/audits/${encodeURIComponent(auditId)}/findings?${params}`
     );
     if (!res.ok) throw new Error(`Failed to fetch findings: ${res.statusText}`);
+    return res.json();
+  },
+
+  async getFindingSource(
+    auditId: string,
+    findingId: string,
+    contextLines = 12
+  ): Promise<FindingSourceCode> {
+    const res = await fetch(
+      `${BASE_URL}/api/v1/audits/${encodeURIComponent(auditId)}/findings/${encodeURIComponent(findingId)}/source?context_lines=${contextLines}`
+    );
+    if (!res.ok) throw new Error(`Failed to load source code: ${res.statusText}`);
     return res.json();
   },
 

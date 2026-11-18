@@ -32,6 +32,7 @@ interface BenchmarkSuite {
   path: string;
   description: string;
   tech: string[];
+  mistakes: string[];
 }
 
 const BENCHMARKS: BenchmarkSuite[] = [
@@ -42,6 +43,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo1_ecommerce_fullstack",
     description: "Complete fullstack e-commerce app with React frontend, Python API & SQLite store.",
     tech: ["Python", "FastAPI", "React", "SQLite"],
+    mistakes: ["SQL Injection", "Missing Route (DELETE /cart)", "Mock Checkout Stub", "Blind Exceptions"],
   },
   {
     id: "repo2",
@@ -50,6 +52,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo2_cloud_microservice",
     description: "Cloud-native microservice architecture with async messaging and event handlers.",
     tech: ["Python", "AsyncIO", "Docker"],
+    mistakes: ["Command Injection (shell=True)", "Unimplemented Go Interface", "Unconfigured Env Var"],
   },
   {
     id: "repo3",
@@ -58,6 +61,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo3_polyglot_fintech",
     description: "Polyglot financial transaction ledger with high consistency and security bounds.",
     tech: ["Python", "FastAPI", "SQLAlchemy"],
+    mistakes: ["Hardcoded JWT Secret", "Documented Route Missing", "Swallowed Exception"],
   },
   {
     id: "repo4",
@@ -66,6 +70,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo4_fastapi_react",
     description: "Modern Single Page Application paired with typed FastAPI backend endpoints.",
     tech: ["Python", "FastAPI", "React", "TypeScript"],
+    mistakes: ["SQL Injection in Search", "Missing Route (DELETE /tasks)", "Unanchored Docs"],
   },
   {
     id: "repo5",
@@ -74,6 +79,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo5_fastapi_only",
     description: "Pure headless REST API service focusing on endpoint routing and data schemas.",
     tech: ["FastAPI", "Pydantic", "Python 3.11"],
+    mistakes: ["Missing Documented /analytics/users", "Unresolved TODO Placeholder"],
   },
   {
     id: "repo6",
@@ -82,6 +88,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo6_node_express",
     description: "JavaScript Express server with middleware, JWT auth routes, and route handlers.",
     tech: ["Node.js", "Express", "JavaScript"],
+    mistakes: ["Hardcoded JWT Secret", "Unprotected Sensitive /admin/data", "Leftover console.log"],
   },
   {
     id: "repo7",
@@ -90,6 +97,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo7_python_worker",
     description: "Background queue worker with task pipelines, retry loops, and job handlers.",
     tech: ["Python", "Async", "Queues"],
+    mistakes: ["Unconfigured Broker Env Var", "Swallowed Exception in Worker"],
   },
   {
     id: "repo8",
@@ -98,6 +106,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo8_go_microservice",
     description: "Go microservice demonstrating implicit interface satisfaction and concurrent routines.",
     tech: ["Go", "Interfaces", "Goroutines"],
+    mistakes: ["Unimplemented AuditNotifier Interface", "Unconfigured Service Port"],
   },
   {
     id: "repo9",
@@ -106,6 +115,7 @@ const BENCHMARKS: BenchmarkSuite[] = [
     path: "./benchmark_repos/repo9_python_monolith",
     description: "Multi-domain modular monolith with domain layers and clean architecture boundaries.",
     tech: ["Python", "Clean Arch", "Domain Models"],
+    mistakes: ["Empty Stub Method (cancel_order)", "Pass Implementation"],
   },
 ];
 
@@ -123,6 +133,7 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [benchmarkSearch, setBenchmarkSearch] = useState("");
+  const [hoveredBenchmarkId, setHoveredBenchmarkId] = useState<string | null>(null);
 
   const cyan = darkMode ? "#38bdf8" : "#0284c7";
   const purple = darkMode ? "#a855f7" : "#7c3aed";
@@ -134,12 +145,12 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
   const textMuted = darkMode ? "#64748b" : "#94a3b8";
 
   const cardStyle: React.CSSProperties = {
-    background: darkMode ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)",
+    background: darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff",
     backdropFilter: "blur(16px)",
-    border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+    border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
     borderRadius: "16px",
     padding: "24px",
-    boxShadow: darkMode ? "0 8px 32px rgba(0, 0, 0, 0.3)" : "0 4px 16px rgba(0, 0, 0, 0.05)",
+    boxShadow: darkMode ? "0 8px 32px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.06)",
   };
 
   const availableCategories = [
@@ -284,47 +295,86 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
           >
             {filteredBenchmarks.map((b) => {
               const isSelected = repoPath === b.path;
+              const isHovered = hoveredBenchmarkId === b.id;
               return (
                 <div
                   key={b.id}
                   onClick={() => setRepoPath(b.path)}
+                  onMouseEnter={() => setHoveredBenchmarkId(b.id)}
+                  onMouseLeave={() => setHoveredBenchmarkId(null)}
                   style={{
-                    padding: "12px 14px",
-                    borderRadius: "10px",
+                    padding: "14px 16px",
+                    borderRadius: "12px",
                     background: isSelected
-                      ? `${cyan}18`
+                      ? `${cyan}20`
+                      : isHovered
+                      ? darkMode
+                        ? "rgba(56, 189, 248, 0.08)"
+                        : "rgba(2, 132, 199, 0.08)"
                       : darkMode
                       ? "rgba(255, 255, 255, 0.03)"
-                      : "rgba(0, 0, 0, 0.02)",
+                      : "rgba(248, 250, 252, 0.95)",
                     border: isSelected
-                      ? `1.5px solid ${cyan}`
+                      ? `2px solid ${cyan}`
+                      : isHovered
+                      ? `1.5px solid ${cyan}88`
                       : darkMode
-                      ? "1px solid rgba(255, 255, 255, 0.06)"
-                      : "1px solid rgba(0, 0, 0, 0.06)",
+                      ? "1px solid rgba(255, 255, 255, 0.07)"
+                      : "1px solid #e2e8f0",
+                    boxShadow: isSelected
+                      ? `0 0 20px ${cyan}35`
+                      : isHovered
+                      ? `0 6px 20px rgba(0, 0, 0, ${darkMode ? "0.35" : "0.08"})`
+                      : "none",
+                    transform: isHovered ? "translateY(-2px)" : "none",
                     cursor: "pointer",
-                    transition: "all 0.15s ease",
+                    transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "13px", color: isSelected ? cyan : textPrimary }}>
+                    <span style={{ fontWeight: 700, fontSize: "13.5px", color: isSelected ? cyan : textPrimary }}>
                       {b.name}
                     </span>
                     <span
                       style={{
-                        fontSize: "10px",
+                        fontSize: "10.5px",
                         fontWeight: 700,
-                        padding: "1px 6px",
-                        borderRadius: "4px",
-                        background: isSelected ? `${cyan}33` : darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
-                        color: isSelected ? cyan : textMuted,
+                        padding: "2px 8px",
+                        borderRadius: "9999px",
+                        background: isSelected ? `${cyan}33` : darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
+                        color: isSelected ? cyan : textSecondary,
                       }}
                     >
                       {b.tag}
                     </span>
                   </div>
-                  <div style={{ fontSize: "12px", color: textSecondary, marginBottom: "6px" }}>
+                  <div style={{ fontSize: "12px", color: textSecondary, marginBottom: "8px", lineHeight: 1.4 }}>
                     {b.description}
                   </div>
+
+                  {/* Intentional Mistakes / Defects Highlighted in this Repo */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: rose, display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                      <AlertCircle size={12} color={rose} /> Mistakes:
+                    </span>
+                    {b.mistakes.map((m) => (
+                      <span
+                        key={m}
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          padding: "2px 7px",
+                          borderRadius: "4px",
+                          background: darkMode ? "rgba(244, 63, 94, 0.15)" : "rgba(220, 38, 38, 0.1)",
+                          color: rose,
+                          border: darkMode ? "1px solid rgba(244, 63, 94, 0.35)" : "1px solid rgba(220, 38, 38, 0.25)",
+                        }}
+                      >
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {b.tech.map((t) => (
                       <span
@@ -332,9 +382,10 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
                         style={{
                           fontSize: "10px",
                           color: textMuted,
-                          padding: "1px 5px",
-                          borderRadius: "3px",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
                           background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+                          border: darkMode ? "1px solid rgba(255, 255, 255, 0.05)" : "1px solid rgba(0, 0, 0, 0.05)",
                         }}
                       >
                         {t}

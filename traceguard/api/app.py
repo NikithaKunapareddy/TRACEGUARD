@@ -143,27 +143,51 @@ def _run_audit_background(
         engine = IncrementalAuditEngine(ctx, DB_PATH, audit_id=audit_id)
         report = engine.run(audit_id=audit_id)
 
-        # Extract graph visualization nodes & edges for 3D viewer
+        # Extract rich graph visualization nodes & edges for 2D & 3D viewers
         graph_nodes = []
         graph_edges = []
         graph = getattr(engine, "graph", getattr(ctx, "graph", None))
         if graph and hasattr(graph, "_graph"):
             try:
-                for nid in list(graph._graph.nodes())[:150]:
+                for nid in list(graph._graph.nodes()):
                     sym = graph.get_symbol(nid)
-                    graph_nodes.append({
-                        "id": str(nid),
-                        "name": sym.name if sym else str(nid),
-                        "kind": (sym.kind.value if hasattr(sym.kind, "value") else str(sym.kind)) if sym else "node",
-                        "file": str(sym.file_path) if sym else "",
-                        "line": sym.line_number if sym else 0,
-                    })
-                for u, v, data in list(graph._graph.edges(data=True))[:250]:
-                    graph_edges.append({
-                        "source": str(u),
-                        "target": str(v),
-                        "relation": str(data.get("relation", "link")),
-                    })
+                    if sym:
+                        graph_nodes.append({
+                            "id": str(nid),
+                            "name": sym.name,
+                            "kind": sym.kind.value if hasattr(sym.kind, "value") else str(sym.kind),
+                            "file": sym.file,
+                            "line": sym.line,
+                            "attributes": getattr(sym, "attributes", {}),
+                        })
+                    else:
+                        graph_nodes.append({
+                            "id": str(nid),
+                            "name": str(nid),
+                            "kind": "node",
+                            "file": "",
+                            "line": 0,
+                            "attributes": {},
+                        })
+
+                if hasattr(graph, "_relations") and graph._relations:
+                    for rel in graph._relations:
+                        graph_edges.append({
+                            "source": str(rel.source),
+                            "target": str(rel.target),
+                            "relation": rel.relation.value if hasattr(rel.relation, "value") else str(rel.relation),
+                            "resolution": rel.resolution.value if hasattr(rel.resolution, "value") else str(rel.resolution),
+                            "confidence": getattr(rel, "confidence", 1.0),
+                        })
+                else:
+                    for u, v, data in graph._graph.edges(data=True):
+                        graph_edges.append({
+                            "source": str(u),
+                            "target": str(v),
+                            "relation": str(data.get("relation", "link")),
+                            "resolution": "confirmed",
+                            "confidence": 1.0,
+                        })
             except Exception:
                 pass
 
@@ -418,6 +442,131 @@ def get_audit_findings(
         "page":      page,
         "page_size": page_size,
         "findings":  raw[start : start + page_size],
+    }
+
+
+@app.get("/api/v1/audits/{audit_id}/findings/{finding_id}/source")
+def get_finding_source_code(
+    audit_id: str,
+    finding_id: str,
+    context_lines: int = Query(10, ge=1, le=50),
+) -> Dict[str, Any]:
+    """
+    Return exact source code context for a finding from the audited repository.
+    Strictly read-only, checks boundaries to prevent path traversal,
+    and returns highlighted affected line ranges with surrounding context.
+    """
+    # 1. Retrieve audit metadata
+    state = _audit_store.get(audit_id)
+    repo_path_str = None
+    findings = []
+    if state and state.get("status") == "completed":
+        repo_path_str = state.get("repo_path")
+        findings = state.get("report_dict", {}).get("findings", [])
+    else:
+        conn = get_connection(DB_PATH)
+        row = conn.execute("SELECT repo_path, report_json FROM audits WHERE id=?", (audit_id,)).fetchone()
+        conn.close()
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Audit {audit_id!r} not found.")
+        repo_path_str = row["repo_path"]
+        if row["report_json"]:
+            try:
+                rep = json.loads(row["report_json"])
+                findings = rep.get("findings", [])
+            except Exception:
+                pass
+
+    if not repo_path_str:
+        raise HTTPException(status_code=404, detail="Repository path not recorded for audit.")
+
+    repo_root = Path(repo_path_str).resolve()
+
+    # 2. Find target finding
+    target_finding = None
+    for f in findings:
+        if str(f.get("id")) == finding_id or str(f.get("stable_id")) == finding_id:
+            target_finding = f
+            break
+
+    if not target_finding:
+        conn = get_connection(DB_PATH)
+        frow = conn.execute(
+            "SELECT * FROM findings WHERE audit_id=? AND (id=? OR stable_id=?)",
+            (audit_id, finding_id, finding_id),
+        ).fetchone()
+        conn.close()
+        if frow:
+            target_finding = dict(frow)
+
+    if not target_finding:
+        raise HTTPException(status_code=404, detail=f"Finding {finding_id!r} not found in audit.")
+
+    affected_file = target_finding.get("affected_file", "")
+    line_number = int(target_finding.get("line_number", 1))
+    end_line_number = target_finding.get("end_line_number")
+    end_line = int(end_line_number) if end_line_number else line_number
+
+    # 3. Path safety & read-only file read
+    file_exists = False
+    lines_output = []
+    total_lines = 0
+    start_lno = 1
+    end_lno = 1
+    lang = "text"
+
+    if affected_file:
+        try:
+            target_path = (repo_root / affected_file).resolve()
+            # Boundary traversal verification
+            if not str(target_path).startswith(str(repo_root)):
+                raise HTTPException(status_code=403, detail="Access outside target repository path is forbidden.")
+
+            if target_path.is_file():
+                file_exists = True
+                lang = target_path.suffix.lstrip(".").lower() or "text"
+                with open(target_path, "r", encoding="utf-8", errors="replace") as fh:
+                    raw_lines = fh.readlines()
+                total_lines = len(raw_lines)
+                start_lno = max(1, line_number - context_lines)
+                end_lno = min(total_lines, end_line + context_lines)
+
+                for idx in range(start_lno, end_lno + 1):
+                    lines_output.append({
+                        "line_number": idx,
+                        "content": raw_lines[idx - 1].rstrip("\r\n"),
+                        "is_problematic": line_number <= idx <= end_line,
+                    })
+        except HTTPException:
+            raise
+        except Exception as e:
+            pass
+
+    return {
+        "audit_id": audit_id,
+        "finding_id": finding_id,
+        "title": target_finding.get("title", ""),
+        "severity": target_finding.get("severity", ""),
+        "category": target_finding.get("category", ""),
+        "confidence": target_finding.get("confidence", 1.0),
+        "verification_status": target_finding.get("verification_status", "Confirmed"),
+        "lifecycle_state": target_finding.get("lifecycle_state", "NEW"),
+        "affected_file": affected_file,
+        "line_number": line_number,
+        "target_line": line_number,
+        "end_line_number": end_line,
+        "file_exists": file_exists,
+        "language": lang,
+        "start_line": start_lno,
+        "end_line": end_lno,
+        "total_lines": total_lines,
+        "lines": lines_output,
+        "raw_snippet": target_finding.get("snippet", ""),
+        "technical_explanation": target_finding.get("technical_explanation", ""),
+        "potential_impact": target_finding.get("potential_impact", ""),
+        "recommended_remediation": target_finding.get("recommended_remediation", ""),
+        "counterevidence_considered": target_finding.get("counterevidence_considered", []),
+        "related_nodes": target_finding.get("related_nodes", []),
     }
 
 

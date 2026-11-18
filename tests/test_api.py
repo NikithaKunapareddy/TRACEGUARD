@@ -69,6 +69,17 @@ def test_audit_lifecycle_sync_flow():
     assert "severity" in first
     assert "category" in first
 
+    # Test source code evidence endpoint
+    first_id = first["id"]
+    src_res = client.get(f"/api/v1/audits/{audit_id}/findings/{first_id}/source")
+    assert src_res.status_code == 200
+    src_data = src_res.json()
+    assert src_data["finding_id"] == first_id
+    assert "lines" in src_data
+    assert "affected_file" in src_data
+    assert "target_line" in src_data
+    assert "file_exists" in src_data
+
     # Test graph endpoint
     graph_res = client.get(f"/api/v1/audits/{audit_id}/graph")
     assert graph_res.status_code == 200
@@ -95,3 +106,9 @@ def test_audit_lifecycle_sync_flow():
 def test_get_nonexistent_audit_returns_404():
     res = client.get("/api/v1/audits/non_existent_uuid_99999")
     assert res.status_code == 404
+
+
+def test_finding_source_nonexistent_returns_404():
+    res = client.get("/api/v1/audits/non_existent_uuid/findings/non_existent_finding/source")
+    assert res.status_code == 404
+

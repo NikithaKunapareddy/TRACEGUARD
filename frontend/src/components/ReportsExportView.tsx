@@ -4,13 +4,23 @@ import { Download, FileCode, FileText, FileJson, Check, Copy } from "lucide-reac
 
 interface ReportsExportViewProps {
   auditId: string;
+  darkMode?: boolean;
 }
 
-export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId }) => {
+export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId, darkMode = true }) => {
   const [loadingFormat, setLoadingFormat] = useState<string | null>(null);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewFormat, setPreviewFormat] = useState<string>("markdown");
   const [copied, setCopied] = useState<boolean>(false);
+
+  const panelBg = darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff";
+  const borderBase = darkMode ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textSecondary = darkMode ? "#94a3b8" : "#475569";
+  const textMuted = darkMode ? "#64748b" : "#94a3b8";
+  const cyan = darkMode ? "#38bdf8" : "#0284c7";
+  const purple = darkMode ? "#a855f7" : "#7c3aed";
+  const emerald = darkMode ? "#10b981" : "#059669";
 
   const handleDownload = async (format: "json" | "markdown" | "html") => {
     try {
@@ -89,24 +99,25 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
         {/* HTML Report */}
         <div
           style={{
-            background: "rgba(15, 23, 42, 0.75)",
+            background: panelBg,
             backdropFilter: "blur(14px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: `1px solid ${borderBase}`,
             borderRadius: "14px",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
+            boxShadow: darkMode ? "0 8px 30px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.05)",
           }}
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-              <FileCode size={20} color="#38bdf8" />
-              <h4 style={{ margin: 0, fontSize: "15px", color: "#f8fafc", fontWeight: 700 }}>
+              <FileCode size={20} color={cyan} />
+              <h4 style={{ margin: 0, fontSize: "15px", color: textPrimary, fontWeight: 700 }}>
                 Interactive HTML Dashboard
               </h4>
             </div>
-            <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: textSecondary, lineHeight: 1.5 }}>
               Standalone zero-dependency single-file visual report with styled tables, badges, and remediation plan.
             </p>
           </div>
@@ -116,9 +127,9 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
             style={{
               padding: "10px 16px",
               borderRadius: "8px",
-              background: "rgba(56, 189, 248, 0.15)",
-              border: "1px solid rgba(56, 189, 248, 0.4)",
-              color: "#38bdf8",
+              background: `${cyan}18`,
+              border: `1px solid ${cyan}44`,
+              color: cyan,
               fontSize: "13px",
               fontWeight: 700,
               cursor: "pointer",
@@ -135,24 +146,25 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
         {/* Markdown Report */}
         <div
           style={{
-            background: "rgba(15, 23, 42, 0.75)",
+            background: panelBg,
             backdropFilter: "blur(14px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: `1px solid ${borderBase}`,
             borderRadius: "14px",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
+            boxShadow: darkMode ? "0 8px 30px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.05)",
           }}
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-              <FileText size={20} color="#a855f7" />
-              <h4 style={{ margin: 0, fontSize: "15px", color: "#f8fafc", fontWeight: 700 }}>
+              <FileText size={20} color={purple} />
+              <h4 style={{ margin: 0, fontSize: "15px", color: textPrimary, fontWeight: 700 }}>
                 Markdown Summary (PR Ready)
               </h4>
             </div>
-            <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: textSecondary, lineHeight: 1.5 }}>
               GitHub GFM formatted document designed for CI/CD pull request comment integration.
             </p>
           </div>
@@ -164,9 +176,9 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
                 flex: 1,
                 padding: "10px 16px",
                 borderRadius: "8px",
-                background: "rgba(168, 85, 247, 0.15)",
-                border: "1px solid rgba(168, 85, 247, 0.4)",
-                color: "#c084fc",
+                background: `${purple}18`,
+                border: `1px solid ${purple}44`,
+                color: purple,
                 fontSize: "13px",
                 fontWeight: 700,
                 cursor: "pointer",
@@ -183,9 +195,9 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
               style={{
                 padding: "10px 14px",
                 borderRadius: "8px",
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "#cbd5e1",
+                background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+                border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
+                color: textSecondary,
                 fontSize: "12px",
                 fontWeight: 600,
                 cursor: "pointer",
@@ -199,24 +211,25 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
         {/* JSON Machine Report */}
         <div
           style={{
-            background: "rgba(15, 23, 42, 0.75)",
+            background: panelBg,
             backdropFilter: "blur(14px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: `1px solid ${borderBase}`,
             borderRadius: "14px",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
+            boxShadow: darkMode ? "0 8px 30px rgba(0, 0, 0, 0.3)" : "0 4px 20px rgba(0, 0, 0, 0.05)",
           }}
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-              <FileJson size={20} color="#10b981" />
-              <h4 style={{ margin: 0, fontSize: "15px", color: "#f8fafc", fontWeight: 700 }}>
+              <FileJson size={20} color={emerald} />
+              <h4 style={{ margin: 0, fontSize: "15px", color: textPrimary, fontWeight: 700 }}>
                 Structured Machine JSON
               </h4>
             </div>
-            <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: textSecondary, lineHeight: 1.5 }}>
               Complete Pydantic AuditReport schema for automated downstream security tooling & SIEM ingestion.
             </p>
           </div>
@@ -228,9 +241,9 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
                 flex: 1,
                 padding: "10px 16px",
                 borderRadius: "8px",
-                background: "rgba(16, 185, 129, 0.15)",
-                border: "1px solid rgba(16, 185, 129, 0.4)",
-                color: "#34d399",
+                background: `${emerald}18`,
+                border: `1px solid ${emerald}44`,
+                color: emerald,
                 fontSize: "13px",
                 fontWeight: 700,
                 cursor: "pointer",
@@ -247,9 +260,9 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
               style={{
                 padding: "10px 14px",
                 borderRadius: "8px",
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "#cbd5e1",
+                background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+                border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
+                color: textSecondary,
                 fontSize: "12px",
                 fontWeight: 600,
                 cursor: "pointer",
@@ -261,15 +274,16 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
         </div>
       </div>
 
-      {/* In-Browser Preview Modal/Card */}
+      {/* Report Preview Panel */}
       {previewContent && (
         <div
           style={{
-            background: "#030712",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "14px",
-            padding: "20px",
-            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.6)",
+            background: panelBg,
+            backdropFilter: "blur(14px)",
+            border: `1px solid ${borderBase}`,
+            borderRadius: "16px",
+            padding: "24px",
+            boxShadow: darkMode ? "0 10px 40px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.06)",
           }}
         >
           <div
@@ -277,57 +291,76 @@ export const ReportsExportView: React.FC<ReportsExportViewProps> = ({ auditId })
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "12px",
+              marginBottom: "16px",
               paddingBottom: "12px",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+              borderBottom: `1px solid ${borderBase}`,
             }}
           >
-            <span style={{ fontSize: "13px", fontWeight: 700, color: "#f8fafc" }}>
-              In-Browser {previewFormat.toUpperCase()} Preview
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontWeight: 700, fontSize: "15px", color: textPrimary }}>
+                {previewFormat === "markdown" ? "Markdown Report Preview" : "JSON Report Preview"}
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  background: `${cyan}20`,
+                  color: cyan,
+                  fontWeight: 600,
+                }}
+              >
+                {previewFormat.toUpperCase()}
+              </span>
+            </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
                 onClick={handleCopy}
                 style={{
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
-                  color: "#f8fafc",
+                  padding: "6px 12px",
                   borderRadius: "6px",
-                  padding: "4px 10px",
+                  background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+                  border: darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
+                  color: copied ? emerald : textSecondary,
                   fontSize: "12px",
+                  fontWeight: 600,
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
                 }}
               >
-                {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                {copied ? <Check size={14} /> : <Copy size={14} />}
                 {copied ? "Copied" : "Copy Content"}
               </button>
               <button
                 onClick={() => setPreviewContent(null)}
                 style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
                   background: "transparent",
-                  border: "none",
-                  color: "#64748b",
-                  fontSize: "14px",
+                  border: `1px solid ${borderBase}`,
+                  color: textMuted,
+                  fontSize: "12px",
                   cursor: "pointer",
-                  padding: "4px 8px",
                 }}
               >
-                ✕
+                Close
               </button>
             </div>
           </div>
+
           <pre
             style={{
               margin: 0,
-              padding: "12px",
-              borderRadius: "8px",
-              background: "#080c18",
-              color: "#e2e8f0",
+              padding: "16px",
+              borderRadius: "10px",
+              background: darkMode ? "#030712" : "#f8fafc",
+              border: `1px solid ${borderBase}`,
               fontSize: "12px",
-              maxHeight: "360px",
+              lineHeight: 1.6,
+              color: darkMode ? "#e2e8f0" : "#0f172a",
+              maxHeight: "500px",
               overflowY: "auto",
               fontFamily: "JetBrains Mono, monospace",
               whiteSpace: "pre-wrap",

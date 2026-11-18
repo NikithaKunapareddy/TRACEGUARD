@@ -128,37 +128,39 @@ pre,
 
 /* Keyframe animations */
 @keyframes pulse-slow {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
-
   50% {
-    opacity: 0.8;
+    opacity: 0.85;
     transform: scale(1.02);
   }
 }
 
 @keyframes radar-sweep {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
 
-  100% {
-    transform: translateY(1000%);
-  }
+@keyframes float-pill {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow-pulse-cyan {
+  0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); }
+  50% { box-shadow: 0 0 28px rgba(56, 189, 248, 0.55); }
 }
 
 .radar-sweep {
@@ -171,4 +173,13 @@ pre,
 
 .pulse-slow {
   animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.interactive-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.interactive-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.2);
 }

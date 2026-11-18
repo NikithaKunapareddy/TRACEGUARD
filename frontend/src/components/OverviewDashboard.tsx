@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { AuditStatus, Finding } from "../api/client";
+import { FindingEvidenceModal } from "./FindingEvidenceModal";
 import {
   ShieldAlert,
   BarChart3,
@@ -18,6 +19,8 @@ interface OverviewDashboardProps {
   findings: Finding[];
   onNavigateTab: (tab: "graph" | "score" | "findings" | "negspace" | "reports") => void;
   darkMode: boolean;
+  auditId?: string;
+  onViewInGraph?: (file: string) => void;
 }
 
 const scoreColor = (score?: number) => {
@@ -33,7 +36,10 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   findings,
   onNavigateTab,
   darkMode,
+  auditId,
+  onViewInGraph,
 }) => {
+  const [evidenceFinding, setEvidenceFinding] = useState<Finding | null>(null);
   const cyan = darkMode ? "#38bdf8" : "#0284c7";
   const purple = darkMode ? "#a855f7" : "#7c3aed";
   const emerald = darkMode ? "#10b981" : "#059669";
@@ -44,12 +50,12 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   const textMuted = darkMode ? "#64748b" : "#94a3b8";
 
   const cardStyle: React.CSSProperties = {
-    background: darkMode ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)",
+    background: darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff",
     backdropFilter: "blur(16px)",
-    border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+    border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
     borderRadius: "16px",
     padding: "22px",
-    boxShadow: darkMode ? "0 4px 20px rgba(0, 0, 0, 0.2)" : "0 2px 12px rgba(0, 0, 0, 0.04)",
+    boxShadow: darkMode ? "0 4px 20px rgba(0, 0, 0, 0.2)" : "0 4px 16px rgba(0, 0, 0, 0.04)",
   };
 
   const criticalCount = findings.filter((f) => f.severity === "critical").length;
@@ -352,7 +358,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
               topCriticalFindings.map((f) => (
                 <div
                   key={f.id}
-                  onClick={() => onNavigateTab("findings")}
+                  onClick={() => setEvidenceFinding(f)}
                   style={{
                     padding: "10px 12px",
                     borderRadius: "8px",
@@ -363,6 +369,17 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: "10px",
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "scale(1.01)";
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 12px ${f.severity === "critical" ? "rgba(244,63,94,0.25)" : "rgba(249,115,22,0.25)"}`;
+                    (e.currentTarget as HTMLDivElement).style.borderColor = f.severity === "critical" ? "rgba(244,63,94,0.4)" : "rgba(249,115,22,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+                    (e.currentTarget as HTMLDivElement).style.borderColor = darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
                   }}
                 >
                   <div style={{ overflow: "hidden" }}>
@@ -412,6 +429,17 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Source Code Evidence Explorer Modal */}
+      {evidenceFinding && (
+        <FindingEvidenceModal
+          auditId={auditId || status.audit_id || ""}
+          finding={evidenceFinding}
+          onClose={() => setEvidenceFinding(null)}
+          onViewInGraph={onViewInGraph}
+          darkMode={darkMode}
+        />
+      )}
     </div>
   );
 };

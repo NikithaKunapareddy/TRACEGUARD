@@ -5,6 +5,7 @@ import { LandingHero } from "./components/LandingHero";
 import { AuditWorkspace } from "./components/AuditWorkspace";
 import { OverviewDashboard } from "./components/OverviewDashboard";
 import { ConsistencyGraph3D, GraphNode, GraphEdge } from "./components/ConsistencyGraph3D";
+import ArchitectureGraph2D from "./components/ArchitectureGraph2D";
 import { IntegrityScoreRadar } from "./components/IntegrityScoreRadar";
 import { FindingsExplorer } from "./components/FindingsExplorer";
 import { NegativeSpaceView } from "./components/NegativeSpaceView";
@@ -64,6 +65,14 @@ export const App: React.FC = () => {
     "./benchmark_repos/repo1_ecommerce_fullstack"
   );
   const [activeDashboardTab, setActiveDashboardTab] = useState<TabKey>("overview");
+  const [graphView, setGraphView] = useState<"2d" | "3d">("2d");
+  const [highlightedGraphNode, setHighlightedGraphNode] = useState<string | null>(null);
+
+  const handleViewInGraph = (fileOrNode: string) => {
+    setHighlightedGraphNode(fileOrNode);
+    setActiveDashboardTab("graph");
+    setGraphView("2d");
+  };
 
   // Health check and initial audits count
   useEffect(() => {
@@ -167,7 +176,7 @@ export const App: React.FC = () => {
 
   const tabs: Array<{ key: TabKey; label: string; icon: React.ElementType; badge?: number }> = [
     { key: "overview", label: "Overview", icon: LayoutDashboard },
-    { key: "graph", label: "3D Consistency Map", icon: Globe2 },
+    { key: "graph", label: "Architecture Graph", icon: Globe2 },
     { key: "score", label: "Integrity Assessment", icon: BarChart3 },
     { key: "findings", label: "Findings", icon: ShieldAlert, badge: findings.length },
     { key: "negspace", label: "Negative-Space Gaps", icon: Puzzle },
@@ -409,34 +418,115 @@ export const App: React.FC = () => {
               findings={findings}
               onNavigateTab={(tab) => setActiveDashboardTab(tab)}
               darkMode={darkMode}
+              auditId={currentAuditId || undefined}
+              onViewInGraph={handleViewInGraph}
             />
           )}
 
           {activeDashboardTab === "graph" && (
             <div style={{ marginBottom: "28px" }}>
-              <ConsistencyGraph3D
-                nodes={graphNodes}
-                edges={graphEdges}
-                findings={findings}
-                onSelectNode={() => setActiveDashboardTab("findings")}
-              />
+              {/* 2D / 3D Switch Toolbar */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    onClick={() => setGraphView("2d")}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      background: graphView === "2d" ? `${cyan}25` : darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+                      border: graphView === "2d" ? `1.5px solid ${cyan}` : `1px solid ${cardBorder}`,
+                      color: graphView === "2d" ? cyan : textSecondary,
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>🗺️ 2D Architecture Graph</span>
+                  </button>
+                  <button
+                    onClick={() => setGraphView("3d")}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      background: graphView === "3d" ? `${cyan}25` : darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+                      border: graphView === "3d" ? `1.5px solid ${cyan}` : `1px solid ${cardBorder}`,
+                      color: graphView === "3d" ? cyan : textSecondary,
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>🌐 3D Consistency Map</span>
+                  </button>
+                </div>
+
+                <div style={{ fontSize: "12px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
+                  {graphNodes.length} ERCG symbols · {graphEdges.length} verified edges
+                </div>
+              </div>
+
+              {graphView === "2d" ? (
+                <ArchitectureGraph2D
+                  nodes={graphNodes}
+                  edges={graphEdges}
+                  findings={findings}
+                  highlightedNodeId={highlightedGraphNode}
+                  onToggle3D={() => setGraphView("3d")}
+                  darkMode={darkMode}
+                />
+              ) : (
+                <ConsistencyGraph3D
+                  nodes={graphNodes}
+                  edges={graphEdges}
+                  findings={findings}
+                  onSelectNode={() => setActiveDashboardTab("findings")}
+                />
+              )}
             </div>
           )}
 
           {activeDashboardTab === "score" && (
-            <IntegrityScoreRadar status={auditStatus} />
+            <IntegrityScoreRadar status={auditStatus} darkMode={darkMode} />
           )}
 
           {activeDashboardTab === "findings" && (
-            <FindingsExplorer findings={findings} total={totalFindings} />
+            <FindingsExplorer
+              findings={findings}
+              total={totalFindings}
+              auditId={currentAuditId || ""}
+              darkMode={darkMode}
+              onViewInGraph={handleViewInGraph}
+            />
           )}
 
           {activeDashboardTab === "negspace" && (
-            <NegativeSpaceView findings={findings} />
+            <NegativeSpaceView
+              findings={findings}
+              darkMode={darkMode}
+              auditId={currentAuditId || ""}
+              onViewInGraph={handleViewInGraph}
+            />
           )}
 
           {activeDashboardTab === "reports" && currentAuditId && (
-            <ReportsExportView auditId={currentAuditId} />
+            <ReportsExportView auditId={currentAuditId} darkMode={darkMode} />
           )}
 
           {activeDashboardTab === "history" && (

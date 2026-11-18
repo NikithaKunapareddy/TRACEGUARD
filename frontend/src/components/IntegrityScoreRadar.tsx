@@ -5,12 +5,23 @@ import { ShieldCheck, ShieldAlert, Cpu, Layers, GitBranch, AlertTriangle } from 
 interface IntegrityScoreRadarProps {
   status: AuditStatus;
   executionTime?: number;
+  darkMode?: boolean;
 }
 
 export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
   status,
   executionTime,
+  darkMode = true,
 }) => {
+  const panelBg = darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff";
+  const borderBase = darkMode ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textSecondary = darkMode ? "#94a3b8" : "#475569";
+  const textMuted = darkMode ? "#64748b" : "#94a3b8";
+  const trackBg = darkMode ? "rgba(255, 255, 255, 0.06)" : "#f1f5f9";
+  const disclaimerBg = darkMode ? "rgba(11, 17, 32, 0.6)" : "#fef3c720";
+  const disclaimerBorder = darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(245, 158, 11, 0.25)";
+
   const score = status.overall_score ?? 100;
   const rating = status.rating || "EXCELLENT";
 
@@ -64,13 +75,13 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
   return (
     <div
       style={{
-        background: "rgba(15, 23, 42, 0.75)",
+        background: panelBg,
         backdropFilter: "blur(16px)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        border: `1px solid ${borderBase}`,
         borderRadius: "16px",
         padding: "24px",
         marginBottom: "28px",
-        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
+        boxShadow: darkMode ? "0 10px 30px rgba(0, 0, 0, 0.35)" : "0 4px 20px rgba(0, 0, 0, 0.05)",
       }}
     >
       <div
@@ -96,7 +107,7 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
               cx="85"
               cy="85"
               r={radius}
-              stroke="rgba(255, 255, 255, 0.08)"
+              stroke={trackBg}
               strokeWidth="12"
               fill="transparent"
             />
@@ -124,10 +135,10 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: "36px", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>
+            <div style={{ fontSize: "36px", fontWeight: 800, color: textPrimary, lineHeight: 1 }}>
               {score.toFixed(1)}
             </div>
-            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>OVERALL</div>
+            <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600 }}>OVERALL</div>
           </div>
 
           {/* Rating Pill */}
@@ -152,15 +163,15 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
             <div>
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "18px", color: "#f8fafc", fontWeight: 700 }}>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: "18px", color: textPrimary, fontWeight: 700 }}>
                 Integrity Dimension Breakdown
               </h2>
-              <p style={{ margin: 0, color: "#94a3b8", fontSize: "13px" }}>
+              <p style={{ margin: 0, color: textSecondary, fontSize: "13px" }}>
                 {status.summary_verdict || "Repository evaluated across 4 core engineering axes."}
               </p>
             </div>
             {executionTime && (
-              <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 500 }}>
+              <span style={{ fontSize: "12px", color: textMuted, fontWeight: 500 }}>
                 Analyzed in {executionTime.toFixed(2)}s
               </span>
             )}
@@ -182,8 +193,8 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <Icon size={14} color={dim.color} />
-                      <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{dim.name}</span>
-                      <span style={{ fontSize: "11px", color: "#64748b" }}>({dim.weight} weight)</span>
+                      <span style={{ fontWeight: 600, color: textPrimary }}>{dim.name}</span>
+                      <span style={{ fontSize: "11px", color: textMuted }}>({dim.weight} weight)</span>
                     </div>
                     <span style={{ fontWeight: 700, color: dim.color }}>
                       {dim.score.toFixed(1)} / 100
@@ -195,7 +206,7 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
                     style={{
                       height: "8px",
                       borderRadius: "4px",
-                      background: "rgba(255, 255, 255, 0.06)",
+                      background: trackBg,
                       overflow: "hidden",
                     }}
                   >
@@ -222,13 +233,13 @@ export const IntegrityScoreRadar: React.FC<IntegrityScoreRadarProps> = ({
           marginTop: "20px",
           padding: "10px 16px",
           borderRadius: "8px",
-          background: "rgba(11, 17, 32, 0.6)",
-          border: "1px solid rgba(255, 255, 255, 0.05)",
+          background: disclaimerBg,
+          border: `1px solid ${disclaimerBorder}`,
           display: "flex",
           alignItems: "center",
           gap: "10px",
           fontSize: "12px",
-          color: "#94a3b8",
+          color: textSecondary,
         }}
       >
         <AlertTriangle size={15} color="#f59e0b" style={{ flexShrink: 0 }} />
