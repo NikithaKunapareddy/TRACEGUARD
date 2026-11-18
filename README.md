@@ -1,104 +1,178 @@
-# TRACEGUARD: Architecture-Agnostic Repository Integrity Agent
+<div align="center">
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
-[![React 18](https://img.shields.io/badge/React-18.2+-61dafb.svg)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6.svg)](https://www.typescriptlang.org)
-[![Tree-sitter](https://img.shields.io/badge/Tree--sitter-0.20+-orange.svg)](https://tree-sitter.github.io/tree-sitter/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 57 Passing](https://img.shields.io/badge/tests-57%20passed-brightgreen.svg)]()
+# 🛡️ TraceGuard
+### **Architecture-Agnostic Repository Integrity Agent**
 
-> **TraceGuard** is a lightweight, intelligent, architecture-agnostic software engineering agent that detects security vulnerabilities, code slop, coding gaps, and loose ends across heterogeneous codebases using an **Evidence-Linked Repository Consistency Graph (ERCG)** and **Negative-Space Analysis**.
+*Understand your codebase. Find what others miss.*
 
----
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React 18](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript 5](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![NetworkX](https://img.shields.io/badge/NetworkX-ERCG%20Graph-8B5CF6?style=for-the-badge)](https://networkx.org/)
+[![Tree-sitter](https://img.shields.io/badge/Tree--sitter-Go%20%26%20AST-F97316?style=for-the-badge)](https://tree-sitter.github.io/tree-sitter/)
+[![SQLite](https://img.shields.io/badge/SQLite-Lifecycle%20DB-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Tests](https://img.shields.io/badge/Tests-62%2F62%20Passing-10B981?style=for-the-badge&logo=pytest&logoColor=white)](#automated-test-suite)
+[![Benchmark Recall](https://img.shields.io/badge/Benchmark%20Recall-96.7%25-3B82F6?style=for-the-badge)](#benchmark-evaluation-across-9-polyglot-repositories)
+[![Safety](https://img.shields.io/badge/Execution-100%25%20Read--Only-EF4444?style=for-the-badge)](#safety-security--disclaimer)
+[![License: MIT](https://img.shields.io/badge/License-MIT-EAB308?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## ⚡ Core Capabilities & Architecture
-
-- **Architecture-Agnostic Analysis**: Audits polyglot codebases without assumptions about directory conventions or application framework styles.
-- **Evidence-Linked Repository Consistency Graph (ERCG)**: Graph representation mapping relationships between files, functions, API routes, client network calls, configurations, data models, schema migrations, and tests.
-- **Negative-Space Analysis Protocol**: Identifies critical omissions that single-file linters cannot detect (e.g., client API invocations with missing server-side route handlers, declared models lacking database migrations, unimplemented interfaces, or unprotected sensitive endpoints).
-- **Go Implicit Interface Satisfaction**: Deep method-set analysis via Tree-sitter Go to verify concrete type satisfaction with pointer vs. value receiver semantics without requiring explicit implementation declarations.
-- **Change-Aware Incremental Auditing**: File-level SHA-256 hash tracking detecting modified, added, and deleted files, with finding lifecycle state transitions (`NEW`, `EXISTING`, `RESOLVED`, `REINTRODUCED`, `ACCEPTED_RISK`).
-- **4-Dimensional Integrity Scoring**: Independent evaluation across **Security Risk (40%)**, **Implementation Completeness (30%)**, **Code Quality (20%)**, and **Development Hygiene (10%)** with heuristic disclaimers and evidence sufficiency safeguards.
-- **Multi-Interface Deployment**: Shared core analysis engine supporting both a command-line interface (CLI) and an asynchronous **FastAPI REST API** with a **React + TypeScript web dashboard**.
-- **100% Read-Only Safety**: Strictly non-destructive execution with sandbox containment and automatic secret redaction.
+</div>
 
 ---
 
-## 🛠️ Technology Stack
+## 🎯 Executive Summary
 
-| Layer | Technologies | Purpose |
+**TraceGuard** is a deterministic, **architecture-agnostic software engineering intelligence agent** that audits polyglot repositories to uncover **security vulnerabilities**, **code slop**, **coding gaps (negative-space omissions)**, and **loose ends**—with line-by-line source evidence you can investigate.
+
+Unlike traditional single-file linters or brittle LLM-only wrappers, TraceGuard constructs an in-memory **Evidence-Linked Repository Consistency Graph (ERCG)** using **Python AST**, **Tree-sitter Go**, and **JS/TS structural adapters**. By modeling relationships across frontend network calls, backend route handlers, database models, migrations, interfaces, configs, and test files, TraceGuard detects **both what is broken in code and what is missing between components**—without making assumptions about folder layout or framework conventions.
+
+### Why TraceGuard Stands Out
+- **Zero Framework Assumptions**: Works seamlessly across full-stack SPAs, microservices, monoliths, headless APIs, and background workers.
+- **4 Specialized Analysis Engines**: Security Risk, Code Slop, Negative-Space Coding Gaps, and Development Hygiene.
+- **False-Positive Trap Rejection**: Every finding records both `supporting_evidence` and `counterevidence_considered`.
+- **Change-Aware Incremental Auditing**: SHA-256 file hashing + SQLite persistence tracks `NEW`, `EXISTING`, `RESOLVED`, and `REINTRODUCED` findings across runs.
+- **Dual Delivery**: Shared core engine powering a **Rich CLI**, an async **FastAPI REST API**, and a **React + TypeScript Web Studio** with interactive **2D & 3D Graph Architecture** views.
+
+---
+
+## 🖼️ Product Showcase (Live UI Screenshots)
+
+### 1. Landing Overview & Illustrative ERCG Preview
+![TraceGuard Landing Overview](docs/screenshots/01_landing_overview.png)
+
+### 2. Audit Workspace (Benchmark Suites & Custom Mounts)
+![TraceGuard Audit Workspace](docs/screenshots/02_audit_workspace.png)
+
+### 3. Live Intelligence Overview Dashboard
+![TraceGuard Dashboard Overview](docs/screenshots/03_dashboard_overview.png)
+
+### 4. 2D Graph Architecture (Stratified Dependency & Defect Topology)
+![TraceGuard 2D Graph Architecture](docs/screenshots/04_graph_2d.png)
+
+### 5. 3D Graph Architecture (Interactive WebGL Sphere)
+![TraceGuard 3D Graph Architecture](docs/screenshots/05_graph_3d.png)
+
+### 6. 4-Dimensional Integrity Radar & Breakdown
+![TraceGuard Integrity Radar](docs/screenshots/06_integrity_radar.png)
+
+### 7. Findings Explorer (Evidence, Root Cause & Copyable Remediation)
+![TraceGuard Findings Explorer](docs/screenshots/07_findings_explorer.png)
+
+### 8. Negative-Space Architectural Analysis (Missing Routes & Mock Stubs)
+![TraceGuard Negative Space](docs/screenshots/08_negative_space.png)
+
+### 9. SQLite Audit History & Side-by-Side Delta Engine
+![TraceGuard Audit History](docs/screenshots/09_audit_history.png)
+
+---
+
+## 🏗️ System Architecture
+
+TraceGuard decouples its core analysis pipeline from presentation and transport layers so the CLI and FastAPI/React web interface execute the exact same deterministic workflow.
+
+```mermaid
+flowchart TD
+    subgraph Clients["Presentation & Interface Layer"]
+        CLI["TraceGuard CLI<br/>(Rich Console, JSON, Markdown, HTML)"]
+        UI["React 18 + TypeScript UI<br/>(2D/3D Graph, 4D Radar, Evidence Modal)"]
+    end
+
+    subgraph Service["Application & API Layer"]
+        FastAPI["FastAPI REST API<br/>(POST /audits, GET /findings, /graph, /report)"]
+        ValidatorSec["Path Traversal & Sandbox Guard"]
+        Worker["Async Background Audit Runner"]
+    end
+
+    subgraph Core["Core Analysis Pipeline (100% Decoupled & Read-Only)"]
+        Scanner["1. Repository Discovery & Technology Classifier"]
+        Adapters["2. Language Adapters<br/>(Python AST · Tree-sitter Go · JS/TS · Config · Docs · Generic)"]
+        ERCG["3. Evidence-Linked Repository Consistency Graph<br/>(NetworkX MultiDiGraph)"]
+        Engines["4. Four Analysis Engines<br/>(Security · Code Slop · Coding Gaps · Loose Ends)"]
+        Correlator["5. Cross-File Trace Correlator"]
+        FPValidator["6. Counterevidence & False-Positive Validator"]
+        Scorer["7. 4D Integrity Scorer"]
+    end
+
+    subgraph Storage["Persistence & Lifecycle Tracking"]
+        SQLite[("SQLite Database<br/>(traceguard.db)")]
+        Hashes["SHA-256 File Hash Store"]
+        Lifecycle["Finding Lifecycle Store<br/>(NEW / EXISTING / RESOLVED / REINTRODUCED)"]
+    end
+
+    CLI --> Core
+    UI -->|REST / JSON| FastAPI
+    FastAPI --> ValidatorSec --> Worker --> Core
+    Core --> Storage
+    SQLite --- Hashes
+    SQLite --- Lifecycle
+```
+
+---
+
+## 🔄 14-Stage End-to-End Audit Flowchart
+
+Every repository audit follows a deterministic 14-stage pipeline from ingestion to multi-format reporting:
+
+```mermaid
+flowchart LR
+    S1["1. Repo Discovery<br/>(.gitignore & limits)"] --> S2["2. Tech & Role<br/>Classification"]
+    S2 --> S3["3. Multi-Tier<br/>AST & Lexical Parse"]
+    S3 --> S4["4. Build ERCG<br/>(Nodes & Edges)"]
+    S4 --> S5["5. Security<br/>Engine"]
+    S4 --> S6["6. Code Slop<br/>Engine"]
+    S4 --> S7["7. Coding Gaps<br/>(Negative-Space)"]
+    S4 --> S8["8. Loose Ends<br/>Engine"]
+    S5 & S6 & S7 & S8 --> S9["9. Cross-File<br/>Correlation"]
+    S9 --> S10["10. Counterevidence<br/>FP Validation"]
+    S10 --> S11["11. Stable ID &<br/>Lifecycle Diff"]
+    S11 --> S12["12. 4D Integrity<br/>Scoring"]
+    S12 --> S13["13. SQLite<br/>Persistence"]
+    S13 --> S14["14. Reports<br/>(UI / JSON / MD / HTML)"]
+```
+
+---
+
+## 🧠 The 4 Analysis Engines
+
+| Engine | Category | What It Detects |
 | :--- | :--- | :--- |
-| **Core Analysis Engine** | Python 3.11+, NetworkX, Pydantic v2 | Graph indexing, negative-space reasoning, 4 engines, scoring |
-| **Language Parsing** | Python `ast`, `tree-sitter`, `tree-sitter-go` | Deep AST parsing, Go method-set extraction, lexical fallback |
-| **Persistence** | SQLite (`traceguard.db`) | Audit history, file hash state tracking, finding lifecycle persistence |
-| **Application Backend** | FastAPI, Uvicorn | REST API, background audit task execution, path traversal guards |
-| **User Interface** | React 18, TypeScript | Web dashboard, 4D scorecards, finding provenance viewer, filters |
-| **CLI & Reporting** | Rich, Jinja2 / HTML templates | Console dashboards, JSON, Markdown, and self-contained HTML reports |
+| **Security Engine** (`security.py`) | `security` | • **Hardcoded Secrets**: AWS keys, GitHub PATs, private keys, JWT/DB secrets (with automatic masking).<br>• **Injection Sinks**: SQL injection (f-strings, `%`, concatenation) & OS command injection (`os.system`, `subprocess(..., shell=True)`, Node `exec`).<br>• **Unsafe Deserialization & Crypto**: `pickle.loads`, `yaml.load` without `SafeLoader`, MD5/SHA-1 credentials, AES-ECB.<br>• **Access Control & Configs**: Unprotected sensitive/admin endpoints (ERCG-correlated), path traversal, `verify=False`, wildcard CORS, vulnerable `requirements.txt` pins. |
+| **Code Slop Engine** (`slop.py`) | `slop` | • **Blind Exception Suppression**: `except ...: pass` in Python and empty `catch {}` blocks in JS/TS.<br>• **Dead & Unreachable Code**: Statements after `return`/`raise` + unreferenced private functions with 0 callers and 0 tests.<br>• **Redundant Wrappers**: 1-line pass-through identity functions adding zero abstraction.<br>• **Complexity & Duplication**: Excessive nesting ($\ge 5$ levels), empty stub methods, cross-file duplicate implementations, unused imports. |
+| **Coding Gap Engine** (`gap.py`) | `gap` | • **Missing Backend Routes**: Frontend `fetch`/`axios` calls with no matching backend route handler (supports `{id}`/`:id` normalization).<br>• **Undelivered Specs**: API routes documented in `README.md`/docs that do not exist in source code.<br>• **Unimplemented Interfaces**: Python `ABC`/`Protocol` and Go `interface` contracts lacking concrete implementations (via Tree-sitter method-set + pointer/value receiver analysis).<br>• **Schema & Stub Gaps**: ORM models missing migrations, live endpoints returning mock/placeholder data, unhandled DB commits/payments. |
+| **Loose End Engine** (`loose_end.py`) | `loose_end` | • **Actionable Developer Markers**: `TODO`, `FIXME`, `HACK`, `XXX` with urgency-calibrated severity.<br>• **Leftover Debug Artifacts**: `pdb.set_trace()`, `breakpoint()`, `debugger;`, `console.log`, debug prints.<br>• **Commented-Out Code**: Multi-line ($\ge 3$ lines) commented implementation blocks.<br>• **Config & Test Gaps**: Environment variables (`os.getenv`/`process.env`) missing from `.env`/`.env.example`, and API routes with 0 test coverage. |
 
 ---
 
-## 🚀 Getting Started
+## 📊 4-Dimensional Integrity Scoring
 
-### 1. Installation
+TraceGuard computes an objective composite score ($0\text{–}100$) across four weighted engineering axes:
 
-```bash
-# Clone repository
-git clone https://github.com/NikithaKunapareddy/TRACEGUARD.git
-cd TRACEGUARD
+$$\text{Overall Score} = 0.40 \times \text{Security} + 0.30 \times \text{Completeness} + 0.20 \times \text{Code Quality} + 0.10 \times \text{Hygiene}$$
 
-# Install Python backend dependencies in editable mode
-python -m pip install -e ".[dev]"
-```
-
-### 2. Command-Line Interface (CLI)
-
-```bash
-# Audit current repository
-traceguard audit .
-
-# Audit an external repository and generate Markdown report
-traceguard audit ./benchmark_repos/repo1_ecommerce_fullstack --format markdown --output ./report.md
-
-# Generate self-contained interactive HTML dashboard
-traceguard audit ./benchmark_repos/repo1_ecommerce_fullstack --format html --output ./dashboard.html
-
-# Export structured JSON for CI/CD gates
-traceguard audit ./benchmark_repos/repo1_ecommerce_fullstack --format json --output ./audit.json
-
-# Filter audit by category or minimum severity
-traceguard audit . --category security --severity high
-```
-
-### 3. FastAPI REST API & Web Dashboard
-
-#### Start the Backend API
-```bash
-python -m uvicorn traceguard.api.app:app --host 0.0.0.0 --port 8000 --reload
-```
-Interactive API documentation is available at `http://localhost:8000/api/docs`.
-
-#### API Endpoints
-- `GET  /api/v1/health`: Health status.
-- `POST /api/v1/audits`: Enqueue repository audit (with path traversal security checks).
-- `GET  /api/v1/audits/{id}`: Query audit execution status, score, and summary.
-- `GET  /api/v1/audits/{id}/findings`: Paginated findings with category & severity filtering.
-- `GET  /api/v1/audits/{id}/graph`: Graph structural metrics and relationship coverage.
-- `GET  /api/v1/audits/{id}/report`: Full report export in `json`, `markdown`, or `html`.
-
-#### Launch the React Frontend
-```bash
-cd frontend
-npm install
-npm start
-```
-The dashboard will open at `http://localhost:3000`.
+- **Penalty Formula**: $\text{Deduction} = \text{SeverityWeight} \times \text{Confidence} \times \text{VerificationMultiplier}$
+  - **Severity Weights**: `CRITICAL = 15.0`, `HIGH = 7.0`, `MEDIUM = 3.0`, `LOW = 1.0`, `INFO = 0.3`
+  - **Verification Multipliers**: `Confirmed = 1.0`, `Probable = 0.7`, `Needs review = 0.4`
+- **Evidence Sufficiency Guard**: Evaluates repository size (`ADEQUATE`, `LIMITED`, `INSUFFICIENT_EVIDENCE`) and always attaches a clear heuristic disclaimer.
 
 ---
 
-## 📊 Benchmark Evaluation Across 9 Repositories
+## 🌐 Language Support Tiers
 
-TraceGuard includes nine controlled benchmark repositories designed to evaluate detection capabilities across varied architectures, languages, and deliberate false-positive traps:
+| Tier | Languages | Parser Mechanism | Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Deep AST** | Python (`.py`) | Python `ast` module | Full call graph, classes, functions, decorators, async handlers, route extraction, SQL/exec sinks, imports |
+| **Tree-sitter AST** | Go (`.go`) | `tree-sitter-go` grammar | Interface method extraction, struct declarations, pointer vs. value receiver method sets, implicit satisfaction |
+| **Structural Lexical** | JS / TS (`.js`, `.jsx`, `.ts`, `.tsx`) | Regex + Template parser | Route declarations (Express, Next.js), client `fetch`/`axios` calls, template literal URLs, export bindings |
+| **Configuration** | `.env`, YAML, JSON, TOML, INI | Schema & KV parsers | Environment key definitions, configuration references, secret detection |
+| **Documentation** | Markdown (`.md`), OpenAPI | Structural doc parser | Declared API specifications, documented endpoint route matching |
+| **Graceful Fallback** | Java, C#, C/C++, Rust, Ruby, PHP, Shell | Lexical fallback parser | Module, function, and class declarations, URL routes, secrets |
+
+---
+
+## 📈 Benchmark Evaluation Across 9 Polyglot Repositories
+
+TraceGuard ships with **9 controlled benchmark repositories** and deliberate false-positive traps:
 
 | Suite | Target Repository | Architecture & Tech Stack | Known Defects | Detected (TP) | False Negatives | Recall | Exec Time |
 | :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -113,50 +187,79 @@ TraceGuard includes nine controlled benchmark repositories designed to evaluate 
 | **Repo 9** | `repo9_python_monolith` | Python Modular Monolith | 1 | 1 | 0 | 100.0% | 0.012s |
 | **Total** | **All 9 Benchmark Suites** | **Polyglot & Heterogeneous** | **30** | **29** | **1** | **96.7%** | **0.024s avg** |
 
-> **Evaluation Methodology Notice:** Synthetic benchmarks provide reproducible defect detection controls and trap validation. Real-world codebases with high dynamic metaprogramming or unsupported languages will experience reduced analysis depth according to the language support tier.
-
 ---
 
-## 🌐 Language Support Tiers & Analysis Depth
+## 🚀 Quick Start
 
-TraceGuard applies tiered structural adapters with graceful degradation:
+### 1. Installation
+```bash
+git clone https://github.com/NikithaKunapareddy/TRACEGUARD.git
+cd TRACEGUARD
+python -m pip install -e ".[dev]"
+```
 
-| Tier | Languages | Parser Mechanism | Capabilities |
-| :--- | :--- | :--- | :--- |
-| **Deep AST** | Python (`.py`) | Python `ast` module | Full call graph, classes, functions, decorators, async handlers, route extraction, SQL/exec sinks, imports |
-| **Tree-sitter AST** | Go (`.go`) | `tree-sitter-go` grammar | Interface method extraction, struct declarations, pointer vs. value receiver method sets, implicit satisfaction |
-| **Structural Lexical** | JavaScript, TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`) | Regex + Template parser | Route declarations (Express, Next.js), client fetch/axios calls, template literal URLs, export bindings |
-| **Configuration** | `.env`, YAML, JSON, TOML | Standard schema parsers | Environment key definitions, configuration references, secret detection |
-| **Documentation** | Markdown (`.md`), OpenAPI | Markdown structural parser | Declared API specifications, documented endpoint route matching |
-| **Graceful Degradation** | Java, C#, C/C++, Rust, Ruby, PHP, Shell | Lexical fallback parser | Module, function, and class declarations, URL routes, secrets |
+### 2. Run via CLI
+```bash
+# Audit current repository (Rich terminal output)
+traceguard audit .
+
+# Export Markdown, interactive HTML, or structured JSON
+traceguard audit ./benchmark_repos/repo1_ecommerce_fullstack --format markdown --output ./report.md
+traceguard audit ./benchmark_repos/repo1_ecommerce_fullstack --format html --output ./dashboard.html
+traceguard audit ./benchmark_repos/repo1_ecommerce_fullstack --format json --output ./audit.json
+
+# Filter by category or minimum severity
+traceguard audit . --category security --severity high
+```
+
+### 3. Run via FastAPI + React Web Studio
+```bash
+# Terminal 1: Start the FastAPI backend (also serves built UI at http://127.0.0.1:8000/dashboard/)
+python -m uvicorn traceguard.api.app:app --host 127.0.0.1 --port 8000 --reload
+
+# Terminal 2 (optional dev mode): Start Vite dev server
+cd frontend
+npm install
+npm run dev
+```
+
+#### Key REST API Endpoints
+- `GET  /api/v1/health` — Engine health & version status
+- `POST /api/v1/audits` — Enqueue repository audit (with path traversal & system directory guards)
+- `GET  /api/v1/audits/{id}` — Query audit status, 4D scores, and summary verdict
+- `GET  /api/v1/audits/{id}/findings` — Paginated findings with category & severity filters
+- `GET  /api/v1/audits/{id}/findings/{finding_id}/source` — Line-by-line on-disk source evidence
+- `GET  /api/v1/audits/{id}/graph` — ERCG nodes, edges, and coverage metrics
+- `GET  /api/v1/audits/{id}/report` — Export in `json`, `markdown`, or `html`
+- `GET  /api/v1/audits/{id1}/compare/{id2}` — Side-by-side lifecycle delta comparison
 
 ---
 
 ## 🧪 Automated Test Suite
 
-TraceGuard includes 57 automated tests covering all components:
+TraceGuard is backed by **62 automated tests** (`pytest`) covering adapters, ERCG graph indexing, Go implicit interfaces, incremental SQLite lifecycle tracking, scoring calibration, false-positive trap rejection, API security, and all 9 benchmark repositories:
 
 ```bash
 python -m pytest tests/ -v
+# 62 passed
 ```
 
-- `tests/test_adapters.py`: Language parser and metadata extraction (3 tests).
-- `tests/test_api.py`: FastAPI endpoints, validation, and traversal protection (5 tests).
-- `tests/test_benchmarks.py`: Core benchmark suites 1–3 (3 tests).
-- `tests/test_benchmarks_expanded.py`: Benchmark suites 4–9 (6 tests).
-- `tests/test_false_positives.py`: Trap rejection across benchmarks (4 tests).
-- `tests/test_go_interface_analysis.py`: Implicit method-set interface satisfaction (10 tests).
-- `tests/test_graph.py`: ERCG indexing, route normalization, reachability (3 tests).
-- `tests/test_incremental.py`: File hash diffing and finding lifecycle tracking (6 tests).
-- `tests/test_read_only_safety.py`: Read-only execution verification (1 test).
-- `tests/test_scoring.py`: 4D integrity scoring formula and sufficiency guards (13 tests).
-- `tests/test_security_calibration.py`: Contextual severity and confidence separation (3 tests).
+- `tests/test_adapters.py` — Language parser & metadata extraction
+- `tests/test_api.py` — FastAPI lifecycle, validation & path traversal rejection
+- `tests/test_audit_history.py` — SQLite persistence, pagination & audit comparison
+- `tests/test_benchmarks.py` & `tests/test_benchmarks_expanded.py` — Benchmark suites 1–9
+- `tests/test_false_positives.py` — False-positive trap rejection across benchmarks
+- `tests/test_go_interface_analysis.py` — Go pointer/value receiver method-set satisfaction
+- `tests/test_graph.py` — ERCG indexing, route normalization & reachability
+- `tests/test_incremental.py` — SHA-256 hash diffing & lifecycle transitions
+- `tests/test_read_only_safety.py` — Strict non-destructive execution verification
+- `tests/test_scoring.py` & `tests/test_security_calibration.py` — 4D scoring & counterevidence checks
 
 ---
 
 ## 🔒 Safety, Security & Disclaimer
 
-1. **Non-Destructive Guarantee**: TraceGuard runs strictly in read-only mode and never creates, modifies, or deletes files in target codebases.
-2. **Credential Redaction**: High-entropy API tokens, AWS keys, and private keys are masked across all outputs (`AKIA************1234`).
-3. **Sandbox Path Validation**: FastAPI endpoints reject relative path traversals and block requests targeting protected system directories.
-4. **Heuristic Assessment Disclaimer**: TraceGuard integrity scores are heuristic engineering quality indicators derived from static repository analysis. They do **not** constitute an official security certification, penetration test, or compliance guarantee.
+1. **100% Read-Only Execution**: TraceGuard never creates, modifies, or deletes files in target repositories.
+2. **Automatic Secret Redaction**: Exposed AWS keys, GitHub tokens, private keys, and credentials are masked in all logs, API responses, and reports (`AKIA************1234`).
+3. **Sandbox Path Validation**: The FastAPI server blocks path traversal and forbids scanning OS system directories.
+4. **Heuristic Assessment Disclaimer**: Integrity scores are static engineering quality indicators and do **not** replace formal penetration testing, compliance audits, or human security review.
