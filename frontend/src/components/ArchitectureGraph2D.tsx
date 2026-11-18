@@ -327,14 +327,69 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
   // Filtered nodes
   const filteredNodes = useMemo(() => {
     return allNodes.filter((n) => {
+      const k = (n.kind || "").toLowerCase();
+      const name = (n.name || "").toLowerCase();
+
       if (kindFilter !== "all") {
-        const k = (n.kind || "").toLowerCase();
-        if (kindFilter === "endpoint" && !k.includes("endpoint") && !k.includes("route") && !k.includes("api")) return false;
-        if (kindFilter === "model" && !k.includes("model") && !k.includes("db") && !k.includes("table")) return false;
-        if (kindFilter === "function" && !k.includes("function") && !k.includes("method") && !k.includes("handler") && !k.includes("controller")) return false;
-        if (kindFilter === "vulnerability" && !k.includes("vuln") && !k.includes("defect") && !k.includes("gap") && !k.includes("sec")) return false;
-        if (kindFilter === "config" && !k.includes("config") && !k.includes("env")) return false;
+        if (
+          kindFilter === "endpoint" &&
+          !k.includes("endpoint") &&
+          !k.includes("route") &&
+          !k.includes("api") &&
+          !name.startsWith("/") &&
+          !name.includes("get") &&
+          !name.includes("post") &&
+          !name.includes("delete") &&
+          !name.includes("put") &&
+          !name.includes("handler") &&
+          !name.includes("service")
+        ) {
+          return false;
+        }
+        if (
+          kindFilter === "model" &&
+          !k.includes("model") &&
+          !k.includes("db") &&
+          !k.includes("table") &&
+          !k.includes("class") &&
+          !k.includes("struct") &&
+          !k.includes("entity") &&
+          !name.includes("model") &&
+          !name.includes("cache") &&
+          !name.includes("store") &&
+          !name.includes("pool")
+        ) {
+          return false;
+        }
+        if (
+          kindFilter === "function" &&
+          !k.includes("function") &&
+          !k.includes("method") &&
+          !k.includes("handler") &&
+          !k.includes("controller")
+        ) {
+          return false;
+        }
+        if (
+          kindFilter === "vulnerability" &&
+          !k.includes("vuln") &&
+          !k.includes("defect") &&
+          !k.includes("gap") &&
+          !k.includes("sec")
+        ) {
+          return false;
+        }
+        if (
+          kindFilter === "config" &&
+          !k.includes("config") &&
+          !k.includes("env") &&
+          !name.includes("port") &&
+          !name.includes("secret")
+        ) {
+          return false;
+        }
       }
+
       if (search.trim()) {
         const q = search.toLowerCase();
         return (
@@ -346,6 +401,55 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       return true;
     });
   }, [allNodes, kindFilter, search]);
+
+  // Live category counts for filter buttons
+  const categoryCounts = useMemo(() => {
+    const counts = {
+      all: allNodes.length,
+      endpoint: 0,
+      function: 0,
+      model: 0,
+      config: 0,
+      vulnerability: 0,
+    };
+    allNodes.forEach((n) => {
+      const k = (n.kind || "").toLowerCase();
+      const name = (n.name || "").toLowerCase();
+      if (
+        k.includes("endpoint") ||
+        k.includes("route") ||
+        k.includes("api") ||
+        name.startsWith("/") ||
+        name.includes("handler") ||
+        name.includes("service")
+      ) {
+        counts.endpoint++;
+      }
+      if (k.includes("function") || k.includes("method") || k.includes("controller") || k.includes("handler")) {
+        counts.function++;
+      }
+      if (
+        k.includes("model") ||
+        k.includes("db") ||
+        k.includes("table") ||
+        k.includes("class") ||
+        k.includes("struct") ||
+        k.includes("entity") ||
+        name.includes("model") ||
+        name.includes("cache") ||
+        name.includes("store")
+      ) {
+        counts.model++;
+      }
+      if (k.includes("config") || k.includes("env") || name.includes("port") || name.includes("secret")) {
+        counts.config++;
+      }
+      if (k.includes("vuln") || k.includes("defect") || k.includes("gap") || k.includes("sec")) {
+        counts.vulnerability++;
+      }
+    });
+    return counts;
+  }, [allNodes]);
 
   const filteredNodeIds = useMemo(() => new Set(filteredNodes.map((n) => n.id)), [filteredNodes]);
 
@@ -745,11 +849,11 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {[
               { id: "all", label: "All Components", count: allNodes.length },
-              { id: "endpoint", label: "Endpoints", color: "#00f0ff" },
-              { id: "function", label: "Functions", color: "#a855f7" },
-              { id: "model", label: "DB Models", color: "#10b981" },
-              { id: "config", label: "Configs", color: "#f59e0b" },
-              { id: "vulnerability", label: "Defects & Gaps", color: "#f43f5e" },
+              { id: "endpoint", label: "Endpoints", count: categoryCounts.endpoint, color: "#00f0ff" },
+              { id: "function", label: "Functions", count: categoryCounts.function, color: "#a855f7" },
+              { id: "model", label: "DB Models", count: categoryCounts.model, color: "#10b981" },
+              { id: "config", label: "Configs", count: categoryCounts.config, color: "#f59e0b" },
+              { id: "vulnerability", label: "Defects & Gaps", count: categoryCounts.vulnerability, color: "#f43f5e" },
             ].map((k) => {
               const isSelected = kindFilter === k.id;
               return (
@@ -776,7 +880,9 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
                     transition: "all 0.15s ease",
                   }}
                 >
-                  <span>{k.label}</span>
+                  <span>
+                    {k.label} ({k.count})
+                  </span>
                 </button>
               );
             })}
@@ -882,6 +988,63 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         />
+
+        {/* Empty state overlay when filtered category has 0 symbols */}
+        {filteredNodes.length === 0 && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              background: darkMode ? "rgba(7, 11, 20, 0.85)" : "rgba(255, 255, 255, 0.88)",
+              backdropFilter: "blur(10px)",
+              zIndex: 10,
+              padding: "24px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "16px",
+                background: "rgba(0, 240, 255, 0.12)",
+                border: "1.5px solid rgba(0, 240, 255, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <Layers size={26} color="#00f0ff" />
+            </div>
+            <div style={{ fontSize: "17px", fontWeight: 800, color: textPrimary, marginBottom: "8px" }}>
+              No {kindFilter === "endpoint" ? "HTTP Endpoints" : kindFilter === "model" ? "Database Models" : kindFilter} in this Repository
+            </div>
+            <div style={{ fontSize: "13px", color: textSecondary, maxWidth: "460px", marginBottom: "20px", lineHeight: 1.55 }}>
+              This specific architecture operates via internal interfaces and domain routines rather than public {kindFilter} symbols.
+            </div>
+            <button
+              onClick={() => setKindFilter("all")}
+              style={{
+                padding: "10px 22px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 700,
+                color: "#FFFFFF",
+                background: cyan,
+                border: "none",
+                cursor: "pointer",
+                boxShadow: `0 6px 20px ${cyan}55`,
+              }}
+            >
+              Show All {allNodes.length} Discovered Components
+            </button>
+          </div>
+        )}
 
         {/* Hover HUD Tooltip */}
         {hoveredNode && !selectedNode && (

@@ -116,7 +116,9 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     name.includes("post") ||
     name.includes("delete") ||
     name.includes("put") ||
-    name.includes("patch")
+    name.includes("patch") ||
+    name.includes("handler") ||
+    name.includes("service")
   ) {
     return {
       color: 0x00f0ff,
@@ -129,14 +131,20 @@ function getNodeStyle(node: GraphNode): NodeVisualMeta {
     };
   }
 
-  // 4. Database Model / Table / Entity (Emerald Green)
+  // 4. Database Model / Table / Entity / Struct (Emerald Green)
   if (
     k.includes("model") ||
     k.includes("table") ||
     k.includes("database") ||
     k.includes("db") ||
     k.includes("entity") ||
-    k.includes("migration")
+    k.includes("class") ||
+    k.includes("struct") ||
+    k.includes("migration") ||
+    name.includes("model") ||
+    name.includes("cache") ||
+    name.includes("store") ||
+    name.includes("pool")
   ) {
     return {
       color: 0x10b981,

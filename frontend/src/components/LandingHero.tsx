@@ -529,6 +529,198 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         </div>
       </div>
 
+      {/* ── Live Telemetry & Automated Security Remediation Showcase ────────── */}
+      <div
+        style={{
+          borderRadius: "20px",
+          background: darkMode
+            ? "linear-gradient(180deg, #101A2B 0%, #0B1220 100%)"
+            : "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+          border: `1px solid ${borderSubtle}`,
+          padding: "26px",
+          marginBottom: "36px",
+          boxShadow: darkMode
+            ? "0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06)"
+            : "0 10px 30px rgba(0, 0, 0, 0.06)",
+        }}
+      >
+        {/* Terminal Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "16px",
+            borderBottom: `1px solid ${borderSubtle}`,
+            marginBottom: "20px",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#F43F5E" }} />
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#F59E0B" }} />
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10B981" }} />
+            </div>
+            <span style={{ fontSize: "12.5px", fontWeight: 700, color: textPrimary, fontFamily: "JetBrains Mono, monospace" }}>
+              TRACEGUARD ENGINE TELEMETRY · DETERMINISTIC ANALYSIS &amp; FIX
+            </span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                padding: "2px 8px",
+                borderRadius: "9999px",
+                background: "rgba(16, 185, 129, 0.15)",
+                color: emerald,
+                border: `1px solid ${emerald}40`,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: emerald }} />
+              AST &amp; ERCG CALIBRATED
+            </span>
+          </div>
+        </div>
+
+        {/* 2-Column Telemetry: Left = 4D Radar Score, Right = Real Code Evidence Diff */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+            gap: "24px",
+            alignItems: "center",
+          }}
+        >
+          {/* Left: 4-Dimensional Integrity Breakdown */}
+          <div
+            style={{
+              padding: "20px",
+              borderRadius: "14px",
+              background: darkMode ? "rgba(7, 11, 20, 0.6)" : "rgba(241, 245, 249, 0.7)",
+              border: `1px solid ${borderSubtle}`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
+                  Repository Assessment
+                </div>
+                <div style={{ fontSize: "18px", fontWeight: 800, color: textPrimary }}>
+                  Executive Health Verdict
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "28px", fontWeight: 900, color: cyan, lineHeight: 1 }}>
+                  95.5<span style={{ fontSize: "14px", color: textMuted }}>/100</span>
+                </div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: emerald }}>
+                  EXCELLENT INTEGRITY
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Dimension Meters */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {[
+                { label: "Security Risk", score: 92.4, color: cyan, desc: "Taint & Injection Free" },
+                { label: "Architecture Completeness", score: 94.8, color: purple, desc: "Zero Dangling Calls" },
+                { label: "Code Quality", score: 93.6, color: emerald, desc: "Slop & Redundancy Free" },
+                { label: "Development Hygiene", score: 100.0, color: "#38BDF8", desc: "Clean Logs & Exceptions" },
+              ].map((dim) => (
+                <div key={dim.label}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                    <span style={{ fontWeight: 700, color: textPrimary }}>{dim.label}</span>
+                    <span style={{ fontWeight: 800, color: dim.color }}>{dim.score.toFixed(1)}%</span>
+                  </div>
+                  <div style={{ height: "6px", width: "100%", background: darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", borderRadius: "9999px", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${dim.score}%`, background: dim.color, borderRadius: "9999px" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Detected Finding & Deterministic Code Fix */}
+          <div
+            style={{
+              padding: "20px",
+              borderRadius: "14px",
+              background: darkMode ? "rgba(7, 11, 20, 0.9)" : "#0F172A",
+              border: "1px solid rgba(244, 63, 94, 0.3)",
+              boxShadow: "0 8px 30px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                <span style={{ fontSize: "10px", fontWeight: 800, padding: "2px 7px", borderRadius: "4px", background: "rgba(244, 63, 94, 0.2)", color: "#F43F5E" }}>
+                  CRITICAL DEFECT
+                </span>
+                <span style={{ fontSize: "11px", color: "#94A3B8", fontFamily: "JetBrains Mono, monospace" }}>
+                  backend/app/routers/search.py:11
+                </span>
+              </div>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#10B981" }}>
+                AUTOMATED REMEDIATION
+              </span>
+            </div>
+
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "#F8FAFC", marginBottom: "12px" }}>
+              SQL Injection via Formatted String Interpolation
+            </div>
+
+            {/* Code Diff Display */}
+            <div
+              style={{
+                background: "#050811",
+                padding: "12px 14px",
+                borderRadius: "8px",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "12px",
+                lineHeight: 1.6,
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                marginBottom: "14px",
+              }}
+            >
+              <div style={{ color: "#F43F5E" }}>
+                - cursor.execute(f"SELECT * FROM products WHERE name LIKE '%&#123;query&#125;%'")
+              </div>
+              <div style={{ color: "#10B981" }}>
+                + cursor.execute("SELECT * FROM products WHERE name LIKE %s", (f"%&#123;query&#125;%",))
+              </div>
+            </div>
+
+            <button
+              onClick={onStartAudit}
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                background: "linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)",
+                border: "none",
+                color: "#FFFFFF",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
+              <span>Test Audit on Real Benchmarks</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── Section: Refined 4 Core Intelligence Capabilities ───────────────── */}
       <div ref={capabilitiesRef} style={{ marginTop: "36px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "18px" }}>
