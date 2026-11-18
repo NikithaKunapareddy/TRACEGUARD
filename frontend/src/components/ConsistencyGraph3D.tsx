@@ -389,21 +389,25 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
-    // C. Dynamic Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, darkMode ? 0.75 : 1.1);
+    // C. Dynamic Studio Lights - Balanced so all node pigments shine vibrantly
+    const ambientLight = new THREE.AmbientLight(0xffffff, darkMode ? 1.0 : 1.25);
     scene.add(ambientLight);
 
-    const cyanLight = new THREE.PointLight(0x00f0ff, 2.5, 250);
-    cyanLight.position.set(50, 60, 50);
-    scene.add(cyanLight);
+    const keyLight = new THREE.DirectionalLight(0xffffff, darkMode ? 1.2 : 1.4);
+    keyLight.position.set(60, 80, 80);
+    scene.add(keyLight);
 
-    const purpleLight = new THREE.PointLight(0xa855f7, 2.5, 250);
-    purpleLight.position.set(-50, -50, -40);
-    scene.add(purpleLight);
+    const fillLight = new THREE.DirectionalLight(0xffffff, darkMode ? 0.6 : 0.8);
+    fillLight.position.set(-60, -40, -60);
+    scene.add(fillLight);
 
-    const roseLight = new THREE.PointLight(0xf43f5e, 2.0, 200);
-    roseLight.position.set(0, 40, -60);
-    scene.add(roseLight);
+    const cyanPoint = new THREE.PointLight(0x00f0ff, 1.2, 220);
+    cyanPoint.position.set(40, 50, 40);
+    scene.add(cyanPoint);
+
+    const purplePoint = new THREE.PointLight(0xa855f7, 1.2, 220);
+    purplePoint.position.set(-40, -40, -30);
+    scene.add(purplePoint);
 
     // D. Sci-Fi Starfield / High-Tech Grid Particle Cloud
     const starCount = darkMode ? 400 : 250;
@@ -476,9 +480,9 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       const material = new THREE.MeshStandardMaterial({
         color: style.color,
         emissive: style.color,
-        emissiveIntensity: isFilteredOut ? 0.08 : 0.65,
-        roughness: 0.15,
-        metalness: 0.85,
+        emissiveIntensity: isFilteredOut ? 0.05 : 0.35,
+        roughness: 0.25,
+        metalness: 0.1,
         transparent: isFilteredOut,
         opacity: isFilteredOut ? 0.2 : 1.0,
       });

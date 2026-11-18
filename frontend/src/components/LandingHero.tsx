@@ -339,23 +339,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
               style={{
                 display: "block",
                 color: textPrimary,
-                marginBottom: "4px",
+                marginBottom: "6px",
               }}
             >
               Understand your codebase.
             </span>
-            <span
-              style={{
-                display: "inline-block",
-                background: darkMode
-                  ? "linear-gradient(135deg, #00F0FF 0%, #38BDF8 35%, #818CF8 75%, #A855F7 100%)"
-                  : "linear-gradient(135deg, #0284C7 0%, #2563EB 50%, #7C3AED 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                color: cyan, // Critical fallback so text is ALWAYS legible if webkit clip is disabled
-              }}
-            >
+            <span className="hero-gradient-title">
               Expose what others miss.
             </span>
           </h1>

@@ -191,3 +191,53 @@ pre,
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(56, 189, 248, 0.2);
 }
+
+/* ========= HERO WORLD-CLASS TYPOGRAPHY & ANIMATIONS ========= */
+@keyframes titleShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.hero-gradient-title {
+  display: inline-block;
+  color: #00F0FF;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background-image: linear-gradient(90deg, #00F0FF 0%, #38BDF8 25%, #818CF8 50%, #C084FC 75%, #00F0FF 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 7s ease-in-out infinite;
+}
+
+[data-theme="light"] .hero-gradient-title {
+  color: #0284C7;
+  background-image: linear-gradient(90deg, #0284C7 0%, #2563EB 25%, #7C3AED 55%, #0284C7 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 7s ease-in-out infinite;
+}
+
+@keyframes heroPulseGlow {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 35px rgba(168, 85, 247, 0.6), 0 0 10px rgba(0, 240, 255, 0.5);
+  }
+}
+
+.hero-glow-dark {
+  animation: heroPulseGlow 4s ease-in-out infinite;
+}
+
