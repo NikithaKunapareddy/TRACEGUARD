@@ -145,8 +145,16 @@ export interface PaginatedFindings {
 
 const getBaseUrl = (): string => {
   try {
+    const viteUrl = (import.meta as any).env?.VITE_API_URL;
+    if (viteUrl) {
+      return String(viteUrl).trim().replace(/\/+$/, "");
+    }
+  } catch {
+    // Ignore in non-Vite environments
+  }
+  try {
     if (typeof process !== "undefined" && process?.env?.REACT_APP_API_URL) {
-      return process.env.REACT_APP_API_URL;
+      return String(process.env.REACT_APP_API_URL).trim().replace(/\/+$/, "");
     }
   } catch {
     // Ignore in browser
