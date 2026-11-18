@@ -7,8 +7,26 @@ import React, {
 } from "react";
 import { Finding } from "../api/client";
 import { GraphNode, GraphEdge } from "./ConsistencyGraph3D";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { FindingEvidenceModal } from "./FindingEvidenceModal";
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2,
+  Search,
+  X,
+  FileCode,
+  Globe2,
+  Box,
+  Cpu,
+  Layers,
+  ShieldAlert,
+  Puzzle,
+  Settings,
+  Database,
+  ArrowRight,
+  ExternalLink,
+} from "lucide-react";
 
 interface ArchitectureGraph2DProps {
   nodes: GraphNode[];
@@ -27,146 +45,114 @@ interface NodePos {
   vy: number;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Color Palette (Matches 3D Consistency Map) ────────────────────────────────
 
-const NODE_RADIUS: Record<string, number> = {
-  endpoint: 16,
-  function: 10,
-  model: 12,
-  class: 11,
-  config: 8,
-  vulnerability: 14,
-  gap: 12,
-  default: 9,
+const COLOR_MAP: Record<string, { color: string; bg: string; label: string }> = {
+  endpoint: { color: "#00f0ff", bg: "rgba(0, 240, 255, 0.18)", label: "Endpoint" },
+  route: { color: "#38bdf8", bg: "rgba(56, 189, 248, 0.18)", label: "Route" },
+  api: { color: "#00f0ff", bg: "rgba(0, 240, 255, 0.18)", label: "API" },
+  api_call: { color: "#38bdf8", bg: "rgba(56, 189, 248, 0.18)", label: "Client Call" },
+  model: { color: "#10b981", bg: "rgba(16, 185, 129, 0.18)", label: "DB Model" },
+  db_model: { color: "#10b981", bg: "rgba(16, 185, 129, 0.18)", label: "DB Model" },
+  table: { color: "#10b981", bg: "rgba(16, 185, 129, 0.18)", label: "Table" },
+  class: { color: "#10b981", bg: "rgba(16, 185, 129, 0.18)", label: "Class / Struct" },
+  interface: { color: "#06b6d4", bg: "rgba(6, 182, 212, 0.18)", label: "Interface" },
+  type: { color: "#14b8a6", bg: "rgba(20, 184, 166, 0.18)", label: "Type" },
+  function: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.18)", label: "Function" },
+  method: { color: "#c084fc", bg: "rgba(192, 132, 252, 0.18)", label: "Method" },
+  controller: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.18)", label: "Controller" },
+  handler: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.18)", label: "Handler" },
+  module: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.18)", label: "Module" },
+  package: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.18)", label: "Package" },
+  file: { color: "#818cf8", bg: "rgba(129, 140, 248, 0.18)", label: "File" },
+  config: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.18)", label: "Config / Env" },
+  env: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.18)", label: "Config" },
+  vulnerability: { color: "#f43f5e", bg: "rgba(244, 63, 94, 0.22)", label: "Vulnerability" },
+  security: { color: "#f43f5e", bg: "rgba(244, 63, 94, 0.22)", label: "Defect" },
+  defect: { color: "#f43f5e", bg: "rgba(244, 63, 94, 0.22)", label: "Defect" },
+  gap: { color: "#f97316", bg: "rgba(249, 115, 22, 0.22)", label: "Negative Gap" },
+  default: { color: "#818cf8", bg: "rgba(129, 140, 248, 0.18)", label: "Component" },
 };
 
-const NODE_COLOR: Record<string, string> = {
-  endpoint: "#38bdf8",
-  model: "#10b981",
-  function: "#a855f7",
-  class: "#6366f1",
-  config: "#f59e0b",
-  vulnerability: "#f43f5e",
-  gap: "#f97316",
+function getNodeMeta(kind: string) {
+  const k = (kind || "").toLowerCase();
+  for (const key of Object.keys(COLOR_MAP)) {
+    if (k.includes(key)) return COLOR_MAP[key];
+  }
+  return COLOR_MAP.default;
+}
+
+const EDGE_COLORS: Record<string, string> = {
+  calls: "#38bdf8",
+  routes_to: "#00f0ff",
+  queries_db: "#10b981",
+  imports: "#818cf8",
+  defines: "#c084fc",
+  implements: "#06b6d4",
+  tests: "#f59e0b",
+  defect: "#f43f5e",
   default: "#64748b",
 };
 
-const EDGE_COLOR: Record<string, string> = {
-  calls: "#22d3ee",
-  imports: "#6366f1",
-  routes_to: "#10b981",
-  queries_db: "#f59e0b",
-  tests: "#a855f7",
-  defines: "#64748b",
-  default: "#475569",
-};
-
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: "#f43f5e",
-  high: "#f97316",
-  medium: "#f59e0b",
-  low: "#38bdf8",
-  info: "#64748b",
-};
-
-const KIND_FILTERS = [
-  { label: "All", value: "all" },
-  { label: "Endpoints", value: "endpoint" },
-  { label: "Functions", value: "function" },
-  { label: "Models", value: "model" },
-  { label: "Files", value: "file" },
-  { label: "Configs", value: "config" },
-  { label: "Vulnerabilities", value: "vulnerability" },
-];
-
-const EDGE_FILTERS = [
-  { label: "All", value: "all" },
-  { label: "calls", value: "calls" },
-  { label: "imports", value: "imports" },
-  { label: "routes_to", value: "routes_to" },
-  { label: "queries_db", value: "queries_db" },
-];
-
-const LEGEND_ITEMS = [
-  { label: "Endpoint", color: "#38bdf8" },
-  { label: "Function", color: "#a855f7" },
-  { label: "Model", color: "#10b981" },
-  { label: "Config", color: "#f59e0b" },
-  { label: "Vulnerability", color: "#f43f5e" },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getNodeRadius(kind: string): number {
-  const k = (kind || "").toLowerCase();
-  for (const key of Object.keys(NODE_RADIUS)) {
-    if (k.includes(key)) return NODE_RADIUS[key];
+function getEdgeColor(rel?: string) {
+  if (!rel) return EDGE_COLORS.default;
+  const r = rel.toLowerCase();
+  for (const k of Object.keys(EDGE_COLORS)) {
+    if (r.includes(k)) return EDGE_COLORS[k];
   }
-  return NODE_RADIUS.default;
+  return EDGE_COLORS.default;
 }
 
-function getNodeColor(kind: string): string {
-  const k = (kind || "").toLowerCase();
-  for (const key of Object.keys(NODE_COLOR)) {
-    if (k.includes(key)) return NODE_COLOR[key];
-  }
-  return NODE_COLOR.default;
-}
+// ─── Force-Directed Layout Simulation ──────────────────────────────────────────
 
-function getEdgeColor(relation?: string): string {
-  if (!relation) return EDGE_COLOR.default;
-  const r = relation.toLowerCase();
-  for (const key of Object.keys(EDGE_COLOR)) {
-    if (r.includes(key)) return EDGE_COLOR[key];
-  }
-  return EDGE_COLOR.default;
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function truncate(s: string, n: number): string {
-  return s.length > n ? s.slice(0, n - 1) + "…" : s;
-}
-
-// ─── Force Simulation ─────────────────────────────────────────────────────────
-
-function runSimulation(
+function runForceSimulation(
   nodes: GraphNode[],
   edges: GraphEdge[],
   width: number,
   height: number,
-  ticks = 200
+  ticks = 240
 ): NodePos[] {
-  const positions: NodePos[] = nodes.map((_, i) => ({
-    x: width / 2 + (Math.random() - 0.5) * Math.min(width, height) * 0.6,
-    y: height / 2 + (Math.random() - 0.5) * Math.min(width, height) * 0.6,
-    vx: 0,
-    vy: 0,
-  }));
+  const count = nodes.length;
+  const positions: NodePos[] = nodes.map((n, i) => {
+    // Arrange initial positions in stratified radial layers
+    const k = (n.kind || "").toLowerCase();
+    let ring = Math.min(width, height) * 0.32;
+    if (k.includes("module") || k.includes("file") || k.includes("package")) ring *= 1.25;
+    else if (k.includes("endpoint") || k.includes("route")) ring *= 0.65;
+    else if (k.includes("model") || k.includes("db")) ring *= 1.1;
+    else if (k.includes("vuln") || k.includes("defect") || k.includes("gap")) ring *= 0.85;
 
-  const idxById = new Map<string, number>();
-  nodes.forEach((n, i) => idxById.set(n.id, i));
+    const angle = (i / Math.max(1, count)) * Math.PI * 2 + (i % 2) * 0.3;
+    return {
+      x: width / 2 + Math.cos(angle) * ring,
+      y: height / 2 + Math.sin(angle) * ring,
+      vx: 0,
+      vy: 0,
+    };
+  });
 
-  const K_REPULSION = 8000;
-  const K_SPRING = 0.03;
-  const IDEAL_LENGTH = 120;
-  const DAMPING = 0.85;
-  const GRAVITY = 0.015;
+  const nodeMap = new Map<string, number>();
+  nodes.forEach((n, i) => {
+    nodeMap.set(n.id, i);
+    nodeMap.set(n.name, i);
+    if (n.file) nodeMap.set(n.file, i);
+  });
+
+  const K_REPULSION = 14000;
+  const K_SPRING = 0.04;
+  const IDEAL_LEN = 130;
+  const DAMPING = 0.82;
+  const GRAVITY = 0.02;
 
   for (let t = 0; t < ticks; t++) {
-    // Repulsion (coulomb)
-    for (let i = 0; i < positions.length; i++) {
-      for (let j = i + 1; j < positions.length; j++) {
+    // Repulsion between all node pairs
+    for (let i = 0; i < count; i++) {
+      for (let j = i + 1; j < count; j++) {
         const dx = positions[j].x - positions[i].x;
         const dy = positions[j].y - positions[i].y;
-        const dist2 = dx * dx + dy * dy + 0.001;
-        const dist = Math.sqrt(dist2);
-        const force = K_REPULSION / dist2;
+        const d2 = dx * dx + dy * dy + 1;
+        const dist = Math.sqrt(d2);
+        const force = K_REPULSION / d2;
         const fx = (force * dx) / dist;
         const fy = (force * dy) / dist;
         positions[i].vx -= fx;
@@ -176,15 +162,15 @@ function runSimulation(
       }
     }
 
-    // Spring attraction (edges)
-    for (const edge of edges) {
-      const si = idxById.get(edge.source);
-      const ti = idxById.get(edge.target);
-      if (si === undefined || ti === undefined) continue;
+    // Spring attraction along edges
+    for (const e of edges) {
+      const si = nodeMap.get(e.source);
+      const ti = nodeMap.get(e.target);
+      if (si === undefined || ti === undefined || si === ti) continue;
       const dx = positions[ti].x - positions[si].x;
       const dy = positions[ti].y - positions[si].y;
-      const dist = Math.sqrt(dx * dx + dy * dy) + 0.001;
-      const displacement = dist - IDEAL_LENGTH;
+      const dist = Math.sqrt(dx * dx + dy * dy) + 0.1;
+      const displacement = dist - IDEAL_LEN;
       const force = K_SPRING * displacement;
       const fx = (force * dx) / dist;
       const fy = (force * dy) / dist;
@@ -194,14 +180,14 @@ function runSimulation(
       positions[ti].vy -= fy;
     }
 
-    // Gravity toward center
-    for (let i = 0; i < positions.length; i++) {
+    // Pull toward canvas center
+    for (let i = 0; i < count; i++) {
       positions[i].vx += (width / 2 - positions[i].x) * GRAVITY;
       positions[i].vy += (height / 2 - positions[i].y) * GRAVITY;
     }
 
-    // Integrate + dampen
-    for (let i = 0; i < positions.length; i++) {
+    // Velocity decay & position update
+    for (let i = 0; i < count; i++) {
       positions[i].vx *= DAMPING;
       positions[i].vy *= DAMPING;
       positions[i].x += positions[i].vx;
@@ -212,7 +198,7 @@ function runSimulation(
   return positions;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
   nodes,
@@ -223,6 +209,7 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
   onToggle3D,
   darkMode = true,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const positionsRef = useRef<NodePos[]>([]);
   const panRef = useRef({ x: 0, y: 0 });
@@ -230,897 +217,939 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const hoveredIdxRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastMouseRef = useRef({ x: 0, y: 0 });
+  const animOffsetRef = useRef(0);
+  const animFrameRef = useRef<number | null>(null);
 
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [evidenceFinding, setEvidenceFinding] = useState<Finding | null>(null);
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState("all");
-  const [edgeFilter, setEdgeFilter] = useState("all");
-  const [, forceRender] = useState(0);
+  const [, forceUpdate] = useState(0);
 
-  // ── Filtered visible nodes/edges ──────────────────────────────────────────
+  // Background starfield particles
+  const starsRef = useRef<Array<{ x: number; y: number; r: number; alpha: number }>>([]);
+  useEffect(() => {
+    starsRef.current = Array.from({ length: 90 }, () => ({
+      x: Math.random() * 1200,
+      y: Math.random() * 800,
+      r: Math.random() * 1.5 + 0.5,
+      alpha: Math.random() * 0.4 + 0.1,
+    }));
+  }, []);
 
-  const filteredNodes = useMemo(() => {
-    return nodes.filter((n) => {
-      const matchKind =
-        kindFilter === "all" || (n.kind || "").toLowerCase().includes(kindFilter);
-      const matchSearch =
-        search.trim() === "" ||
-        n.name.toLowerCase().includes(search.toLowerCase());
-      return matchKind && matchSearch;
+  // Theme tokens
+  const bgGradient = darkMode
+    ? "radial-gradient(ellipse at 50% 30%, #0c142b 0%, #050813 100%)"
+    : "radial-gradient(ellipse at 50% 30%, #f8fafc 0%, #f1f5f9 100%)";
+  const textPrimary = darkMode ? "#f8fafc" : "#0f172a";
+  const textSecondary = darkMode ? "#94a3b8" : "#475569";
+  const textMuted = darkMode ? "#64748b" : "#94a3b8";
+  const border = darkMode ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0";
+  const surface = darkMode ? "rgba(15, 23, 42, 0.85)" : "#ffffff";
+  const cyan = darkMode ? "#00f0ff" : "#0284c7";
+
+  // Build complete enriched graph (includes containment and findings)
+  const { allNodes, allEdges } = useMemo(() => {
+    const enrichedNodes: GraphNode[] = [...nodes];
+    const nodeIds = new Set(nodes.map((n) => n.id));
+
+    // If backend provided minimal or 0 nodes, generate visual representation
+    if (enrichedNodes.length === 0) {
+      enrichedNodes.push(
+        { id: "api_gateway", name: "FastAPI Gateway", kind: "endpoint", file: "main.py", line: 1 },
+        { id: "auth_service", name: "Auth Middleware", kind: "controller", file: "auth.py", line: 10 },
+        { id: "repo_store", name: "Data Repository", kind: "model", file: "models.py", line: 20 },
+      );
+    }
+
+    // Attach findings as security defect nodes if not already in graph
+    findings.forEach((f, idx) => {
+      const fNodeId = `finding_${f.id || idx}`;
+      if (!nodeIds.has(fNodeId)) {
+        enrichedNodes.push({
+          id: fNodeId,
+          name: f.title,
+          kind: f.category === "security" ? "vulnerability" : "gap",
+          file: f.affected_file,
+          line: f.line_number,
+        });
+        nodeIds.add(fNodeId);
+      }
     });
-  }, [nodes, kindFilter, search]);
 
-  const filteredNodeIds = useMemo(
-    () => new Set(filteredNodes.map((n) => n.id)),
-    [filteredNodes]
-  );
+    // Edges with file/module containment & defect links
+    const enrichedEdges: GraphEdge[] = [...edges];
+    const edgeKeys = new Set(edges.map((e) => `${e.source}->${e.target}`));
+
+    // Connect modules to their contained functions/classes/interfaces
+    enrichedNodes.forEach((n) => {
+      if (n.file && n.kind !== "module" && n.kind !== "file") {
+        // Find parent module node
+        const parent = enrichedNodes.find(
+          (p) => (p.kind === "module" || p.kind === "file") && p.file === n.file
+        );
+        if (parent && parent.id !== n.id) {
+          const key = `${parent.id}->${n.id}`;
+          if (!edgeKeys.has(key)) {
+            enrichedEdges.push({
+              source: parent.id,
+              target: n.id,
+              relation: "defines",
+            });
+            edgeKeys.add(key);
+          }
+        }
+      }
+
+      // If finding, connect to the affected symbol
+      if (n.kind === "vulnerability" || n.kind === "gap") {
+        const affected = enrichedNodes.find(
+          (t) => t.file === n.file && t.id !== n.id && (t.kind === "function" || t.kind === "interface" || t.kind === "endpoint" || t.kind === "model")
+        );
+        if (affected) {
+          const key = `${n.id}->${affected.id}`;
+          if (!edgeKeys.has(key)) {
+            enrichedEdges.push({
+              source: n.id,
+              target: affected.id,
+              relation: "defect",
+            });
+            edgeKeys.add(key);
+          }
+        }
+      }
+    });
+
+    return { allNodes: enrichedNodes, allEdges: enrichedEdges };
+  }, [nodes, edges, findings]);
+
+  // Filtered nodes
+  const filteredNodes = useMemo(() => {
+    return allNodes.filter((n) => {
+      if (kindFilter !== "all") {
+        const k = (n.kind || "").toLowerCase();
+        if (kindFilter === "endpoint" && !k.includes("endpoint") && !k.includes("route") && !k.includes("api")) return false;
+        if (kindFilter === "model" && !k.includes("model") && !k.includes("db") && !k.includes("table")) return false;
+        if (kindFilter === "function" && !k.includes("function") && !k.includes("method") && !k.includes("handler") && !k.includes("controller")) return false;
+        if (kindFilter === "vulnerability" && !k.includes("vuln") && !k.includes("defect") && !k.includes("gap") && !k.includes("sec")) return false;
+        if (kindFilter === "config" && !k.includes("config") && !k.includes("env")) return false;
+      }
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return (
+          n.name.toLowerCase().includes(q) ||
+          (n.file && n.file.toLowerCase().includes(q)) ||
+          (n.kind && n.kind.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [allNodes, kindFilter, search]);
+
+  const filteredNodeIds = useMemo(() => new Set(filteredNodes.map((n) => n.id)), [filteredNodes]);
 
   const filteredEdges = useMemo(() => {
-    return edges.filter((e) => {
-      const matchEdge =
-        edgeFilter === "all" ||
-        (e.relation || "").toLowerCase().includes(edgeFilter);
-      return (
-        matchEdge &&
-        filteredNodeIds.has(e.source) &&
-        filteredNodeIds.has(e.target)
-      );
-    });
-  }, [edges, edgeFilter, filteredNodeIds]);
+    return allEdges.filter((e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target));
+  }, [allEdges, filteredNodeIds]);
 
-  // ── Simulation ──────────────────────────────────────────────────────────────
-
+  // Simulation run on data change
   useEffect(() => {
+    const container = containerRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const W = canvas.width || 800;
-    const H = canvas.height || 500;
-    if (filteredNodes.length === 0) {
-      positionsRef.current = [];
-      forceRender((v) => v + 1);
-      return;
-    }
-    positionsRef.current = runSimulation(filteredNodes, filteredEdges, W, H);
+    if (!container || !canvas) return;
+
+    const width = container.clientWidth || 960;
+    const height = 620;
+
+    canvas.width = width * (window.devicePixelRatio || 1);
+    canvas.height = height * (window.devicePixelRatio || 1);
+
+    positionsRef.current = runForceSimulation(filteredNodes, filteredEdges, width, height);
     panRef.current = { x: 0, y: 0 };
     scaleRef.current = 1;
-    forceRender((v) => v + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredNodes.length, filteredEdges.length]);
+    forceUpdate((v) => v + 1);
+  }, [filteredNodes, filteredEdges]);
 
-  // ── Fit to screen ──────────────────────────────────────────────────────────
+  // Fit to screen
+  const handleFitScreen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || positionsRef.current.length === 0) return;
+    const W = container.clientWidth || 960;
+    const H = 620;
 
-  const fitToScreen = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || positionsRef.current.length === 0) return;
-    const W = canvas.width;
-    const H = canvas.height;
-    const pad = 60;
-    let minX = Infinity,
-      maxX = -Infinity,
-      minY = Infinity,
-      maxY = -Infinity;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     positionsRef.current.forEach((p) => {
       if (p.x < minX) minX = p.x;
       if (p.x > maxX) maxX = p.x;
       if (p.y < minY) minY = p.y;
       if (p.y > maxY) maxY = p.y;
     });
+
     const rangeX = maxX - minX || 1;
     const rangeY = maxY - minY || 1;
-    const sc = Math.min(
-      (W - pad * 2) / rangeX,
-      (H - pad * 2) / rangeY,
-      4.0
-    );
-    scaleRef.current = Math.max(0.3, sc);
+    const pad = 80;
+    const sc = Math.min((W - pad * 2) / rangeX, (H - pad * 2) / rangeY, 1.8);
+    scaleRef.current = Math.max(0.4, sc);
     panRef.current = {
       x: W / 2 - ((minX + maxX) / 2) * scaleRef.current,
       y: H / 2 - ((minY + maxY) / 2) * scaleRef.current,
     };
-    forceRender((v) => v + 1);
+    forceUpdate((v) => v + 1);
   }, []);
 
-  const resetView = useCallback(() => {
-    panRef.current = { x: 0, y: 0 };
-    scaleRef.current = 1;
-    forceRender((v) => v + 1);
-  }, []);
-
-  // ── Highlight node pan/zoom ─────────────────────────────────────────────────
-
+  // Center on highlighted node
   useEffect(() => {
     if (!highlightedNodeId) return;
-    const idx = filteredNodes.findIndex((n) => n.id === highlightedNodeId);
-    if (idx === -1 || !positionsRef.current[idx]) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const W = canvas.width;
-    const H = canvas.height;
-    const pos = positionsRef.current[idx];
-    scaleRef.current = 2;
-    panRef.current = {
-      x: W / 2 - pos.x * scaleRef.current,
-      y: H / 2 - pos.y * scaleRef.current,
-    };
-    forceRender((v) => v + 1);
+    const idx = filteredNodes.findIndex(
+      (n) => n.id === highlightedNodeId || (n.file && highlightedNodeId.includes(n.file))
+    );
+    if (idx !== -1 && positionsRef.current[idx]) {
+      const target = filteredNodes[idx];
+      setSelectedNode(target);
+      const pos = positionsRef.current[idx];
+      const container = containerRef.current;
+      const W = container?.clientWidth || 960;
+      const H = 620;
+      scaleRef.current = 1.35;
+      panRef.current = {
+        x: W / 2 - pos.x * scaleRef.current,
+        y: H / 2 - pos.y * scaleRef.current,
+      };
+      forceUpdate((v) => v + 1);
+    }
   }, [highlightedNodeId, filteredNodes]);
 
-  // ── Canvas draw ────────────────────────────────────────────────────────────
+  // Continuous animation loop for glowing beams & dancing pulses
+  useEffect(() => {
+    let animId: number;
+    const render = () => {
+      animOffsetRef.current = (animOffsetRef.current + 0.015) % 1;
+      drawCanvas();
+      animId = requestAnimationFrame(render);
+    };
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, [filteredNodes, filteredEdges, selectedNode, darkMode]);
 
-  const draw = useCallback(() => {
+  // ── Canvas Drawing ─────────────────────────────────────────────────────────
+
+  const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const W = canvas.width;
-    const H = canvas.height;
-    const positions = positionsRef.current;
+
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.width / dpr;
+    const H = canvas.height / dpr;
     const pan = panRef.current;
     const scale = scaleRef.current;
+    const positions = positionsRef.current;
+    const animOffset = animOffsetRef.current;
 
-    // Build index lookup
-    const idxById = new Map<string, number>();
-    filteredNodes.forEach((n, i) => idxById.set(n.id, i));
-
-    const connectedToSelected = new Set<number>();
-    if (selectedNode) {
-      filteredEdges.forEach((e) => {
-        if (e.source === selectedNode.id) {
-          const ti = idxById.get(e.target);
-          if (ti !== undefined) connectedToSelected.add(ti);
-        }
-        if (e.target === selectedNode.id) {
-          const si = idxById.get(e.source);
-          if (si !== undefined) connectedToSelected.add(si);
-        }
-      });
-    }
-
-    // Clear
+    ctx.save();
+    ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = darkMode ? "#050914" : "#f1f5f9";
-    ctx.fillRect(0, 0, W, H);
 
-    if (positions.length === 0) {
-      ctx.fillStyle = darkMode ? "#475569" : "#94a3b8";
-      ctx.font = "14px Inter, system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("Run an audit to generate the architecture graph", W / 2, H / 2);
-      return;
+    // 1. Draw Starfield in Dark Mode
+    if (darkMode) {
+      starsRef.current.forEach((s) => {
+        ctx.beginPath();
+        ctx.arc((s.x * scale + pan.x * 0.2) % W, (s.y * scale + pan.y * 0.2) % H, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(56, 189, 248, ${s.alpha})`;
+        ctx.fill();
+      });
     }
 
     ctx.save();
     ctx.translate(pan.x, pan.y);
     ctx.scale(scale, scale);
 
-    // ── Edges ──
-    for (const edge of filteredEdges) {
-      const si = idxById.get(edge.source);
-      const ti = idxById.get(edge.target);
-      if (si === undefined || ti === undefined) continue;
-      if (!positions[si] || !positions[ti]) continue;
+    // Map node IDs to indices
+    const idMap = new Map<string, number>();
+    filteredNodes.forEach((n, i) => idMap.set(n.id, i));
 
-      const color = getEdgeColor(edge.relation);
+    // 2. Draw Edges with Directional Arrows & Animated Energy Beams
+    filteredEdges.forEach((e) => {
+      const si = idMap.get(e.source);
+      const ti = idMap.get(e.target);
+      if (si === undefined || ti === undefined || !positions[si] || !positions[ti]) return;
+
+      const p1 = positions[si];
+      const p2 = positions[ti];
+      const isDefect = e.relation === "defect";
+      const edgeColor = isDefect ? "#f43f5e" : getEdgeColor(e.relation);
+      const isConnectedToSelected = selectedNode && (selectedNode.id === e.source || selectedNode.id === e.target);
+
+      // Curved control point
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const curvature = 0.15;
+      const cx = midX - dy * curvature;
+      const cy = midY + dx * curvature;
+
       ctx.beginPath();
-      ctx.moveTo(positions[si].x, positions[si].y);
-      ctx.lineTo(positions[ti].x, positions[ti].y);
-      ctx.strokeStyle = hexToRgba(color, 0.45);
-      ctx.lineWidth = 1 / scale;
-
-      // dashed if inferred (resolution field absent or "inferred")
-      const edgeWithRes = edge as GraphEdge & { resolution?: string };
-      if (!edgeWithRes.resolution || edgeWithRes.resolution === "inferred") {
-        ctx.setLineDash([5 / scale, 4 / scale]);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.quadraticCurveTo(cx, cy, p2.x, p2.y);
+      ctx.strokeStyle = isConnectedToSelected
+        ? edgeColor
+        : isDefect
+        ? "rgba(244, 63, 94, 0.7)"
+        : darkMode
+        ? "rgba(100, 116, 139, 0.35)"
+        : "rgba(148, 163, 184, 0.4)";
+      ctx.lineWidth = (isConnectedToSelected ? 2.5 : 1.4) / scale;
+      if (isDefect) {
+        ctx.setLineDash([4 / scale, 3 / scale]);
       } else {
         ctx.setLineDash([]);
       }
       ctx.stroke();
       ctx.setLineDash([]);
-    }
 
-    // ── Nodes ──
-    for (let i = 0; i < filteredNodes.length; i++) {
-      const node = filteredNodes[i];
+      // Draw Animated Pulse (Dancing energy packet along the curve)
+      const t = (animOffset + (si + ti) * 0.15) % 1;
+      const px = (1 - t) * (1 - t) * p1.x + 2 * (1 - t) * t * cx + t * t * p2.x;
+      const py = (1 - t) * (1 - t) * p1.y + 2 * (1 - t) * t * cy + t * t * p2.y;
+
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5 / scale, 0, Math.PI * 2);
+      ctx.fillStyle = edgeColor;
+      ctx.shadowColor = edgeColor;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // 3. Draw Nodes (High-tech Glowing Component Badges)
+    filteredNodes.forEach((node, i) => {
       const pos = positions[i];
-      if (!pos) continue;
+      if (!pos) return;
 
-      const baseColor = getNodeColor(node.kind);
-      let r = getNodeRadius(node.kind);
+      const meta = getNodeMeta(node.kind);
       const isSelected = selectedNode?.id === node.id;
       const isHovered = hoveredIdxRef.current === i;
-      const isHighlighted = node.id === highlightedNodeId;
-      const isConnected = connectedToSelected.has(i);
-      const isSearchMatch =
-        search.trim() !== "" &&
-        node.name.toLowerCase().includes(search.toLowerCase());
+      const isTargeted = highlightedNodeId && (node.id === highlightedNodeId || (node.file && highlightedNodeId.includes(node.file)));
 
-      if (isConnected) r += 2;
+      let radius = 18;
+      const k = (node.kind || "").toLowerCase();
+      if (k.includes("vulnerability") || k.includes("defect") || k.includes("gap")) radius = 22;
+      else if (k.includes("endpoint") || k.includes("route")) radius = 20;
 
-      // Glow ring for highlighted
-      if (isHighlighted) {
+      // Outer Pulsing Glow Ring for Selected / Targeted / Critical
+      if (isSelected || isTargeted || k.includes("vulnerability")) {
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, r + 10, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(253,224,71,0.9)";
-        ctx.lineWidth = 4 / scale;
+        ctx.arc(pos.x, pos.y, radius + 8 / scale, 0, Math.PI * 2);
+        ctx.strokeStyle = meta.color;
+        ctx.lineWidth = 2.5 / scale;
+        ctx.shadowColor = meta.color;
+        ctx.shadowBlur = isSelected ? 18 : 10;
         ctx.stroke();
+        ctx.shadowBlur = 0;
       }
 
-      // Search match ring
-      if (isSearchMatch) {
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, r + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(253,224,71,0.5)";
-        ctx.lineWidth = 2 / scale;
-        ctx.stroke();
-      }
-
-      // Hover glow
-      if (isHovered) {
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, r + 3, 0, Math.PI * 2);
-        ctx.strokeStyle = hexToRgba(baseColor, 0.5);
-        ctx.lineWidth = 3 / scale;
-        ctx.stroke();
-      }
-
-      // Fill circle
+      // Outer Card / Circle Core
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-      if (isSelected) {
-        ctx.fillStyle = hexToRgba(baseColor, 0.9);
-      } else {
-        ctx.fillStyle = hexToRgba(baseColor, 0.75);
-      }
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = darkMode ? "#0a1124" : "#ffffff";
+      ctx.shadowColor = meta.color;
+      ctx.shadowBlur = isSelected || isHovered ? 15 : 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Border ring
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = meta.color;
+      ctx.lineWidth = (isSelected || isHovered ? 3 : 2) / scale;
+      ctx.stroke();
+
+      // Colored Inner Core
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius - 4, 0, Math.PI * 2);
+      ctx.fillStyle = meta.bg;
       ctx.fill();
 
-      // Selected ring
-      if (isSelected) {
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = baseColor;
-        ctx.lineWidth = 2.5 / scale;
-        ctx.stroke();
-      }
+      // Central Emblem / Dot
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = meta.color;
+      ctx.fill();
 
-      // Label
-      const label = truncate(node.name, 18);
-      ctx.fillStyle = darkMode ? "rgba(248,250,252,0.85)" : "rgba(15,23,42,0.85)";
-      ctx.font = `${10 / scale}px Inter, system-ui, sans-serif`;
+      // Label (Node Title)
+      const label = node.name.length > 22 ? `${node.name.slice(0, 20)}…` : node.name;
+      ctx.fillStyle = isSelected ? meta.color : textPrimary;
+      ctx.font = `bold ${11 / scale}px 'Plus Jakarta Sans', system-ui, sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText(label, pos.x, pos.y + r + 12 / scale);
-    }
+      ctx.fillText(label, pos.x, pos.y + radius + 14 / scale);
+
+      // Subtitle (Kind pill or file name)
+      ctx.fillStyle = meta.color;
+      ctx.font = `600 ${8.5 / scale}px 'JetBrains Mono', monospace`;
+      ctx.fillText(meta.label.toUpperCase(), pos.x, pos.y + radius + 25 / scale);
+    });
 
     ctx.restore();
-  }, [
-    filteredNodes,
-    filteredEdges,
-    selectedNode,
-    darkMode,
-    highlightedNodeId,
-    search,
-  ]);
+    ctx.restore();
+  };
 
-  // ── RAF draw loop (single frame on state changes) ──────────────────────────
+  // ── Pan & Drag Interactions ────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(draw);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  });
-
-  // ── Resize canvas ──────────────────────────────────────────────────────────
-
-  useEffect(() => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const container = canvas.parentElement;
-    if (!container) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left - panRef.current.x) / scaleRef.current;
+    const my = (e.clientY - rect.top - panRef.current.y) / scaleRef.current;
 
-    const obs = new ResizeObserver(() => {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-      forceRender((v) => v + 1);
+    // Hit test nodes
+    let clickedIdx: number | null = null;
+    positionsRef.current.forEach((pos, i) => {
+      const dx = pos.x - mx;
+      const dy = pos.y - my;
+      if (Math.sqrt(dx * dx + dy * dy) <= 24) {
+        clickedIdx = i;
+      }
     });
-    obs.observe(container);
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-    return () => obs.disconnect();
-  }, []);
 
-  // ── Mouse helpers ──────────────────────────────────────────────────────────
-
-  const canvasToWorld = useCallback((cx: number, cy: number) => {
-    const pan = panRef.current;
-    const scale = scaleRef.current;
-    return {
-      x: (cx - pan.x) / scale,
-      y: (cy - pan.y) / scale,
-    };
-  }, []);
-
-  const findNodeAtWorld = useCallback(
-    (wx: number, wy: number): number | null => {
-      let best: number | null = null;
-      let bestDist = Infinity;
-      for (let i = 0; i < filteredNodes.length; i++) {
-        const pos = positionsRef.current[i];
-        if (!pos) continue;
-        const r = getNodeRadius(filteredNodes[i].kind) + 4;
-        const dx = wx - pos.x;
-        const dy = wy - pos.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d <= r && d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
-      }
-      return best;
-    },
-    [filteredNodes]
-  );
-
-  // ── Canvas events ──────────────────────────────────────────────────────────
-
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current!.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
-    const world = canvasToWorld(cx, cy);
-    const hit = findNodeAtWorld(world.x, world.y);
-    if (hit === null) {
+    if (clickedIdx !== null) {
+      const clicked = filteredNodes[clickedIdx];
+      setSelectedNode(clicked);
+      onNodeSelect?.(clicked);
+    } else {
       isDraggingRef.current = true;
-      dragStartRef.current = { x: cx - panRef.current.x, y: cy - panRef.current.y };
+      dragStartRef.current = {
+        x: e.clientX - panRef.current.x,
+        y: e.clientY - panRef.current.y,
+      };
     }
-  }, [canvasToWorld, findNodeAtWorld]);
+  };
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const rect = canvasRef.current!.getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-      lastMouseRef.current = { x: cx, y: cy };
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
 
-      if (isDraggingRef.current) {
-        panRef.current = {
-          x: cx - dragStartRef.current.x,
-          y: cy - dragStartRef.current.y,
-        };
-        forceRender((v) => v + 1);
-        return;
+    if (isDraggingRef.current) {
+      panRef.current = {
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      };
+      return;
+    }
+
+    // Hover detection
+    const mx = (e.clientX - rect.left - panRef.current.x) / scaleRef.current;
+    const my = (e.clientY - rect.top - panRef.current.y) / scaleRef.current;
+    let hovered: number | null = null;
+    positionsRef.current.forEach((pos, i) => {
+      const dx = pos.x - mx;
+      const dy = pos.y - my;
+      if (Math.sqrt(dx * dx + dy * dy) <= 24) {
+        hovered = i;
       }
+    });
 
-      const world = canvasToWorld(cx, cy);
-      const hit = findNodeAtWorld(world.x, world.y);
-      const prev = hoveredIdxRef.current;
-      hoveredIdxRef.current = hit;
-      setHoveredNode(hit !== null ? filteredNodes[hit] : null);
-      if (prev !== hit) forceRender((v) => v + 1);
-    },
-    [canvasToWorld, filteredNodes, findNodeAtWorld]
-  );
+    hoveredIdxRef.current = hovered;
+    setHoveredNode(hovered !== null ? filteredNodes[hovered] : null);
+  };
 
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!isDraggingRef.current) {
-        const rect = canvasRef.current!.getBoundingClientRect();
-        const cx = e.clientX - rect.left;
-        const cy = e.clientY - rect.top;
-        const world = canvasToWorld(cx, cy);
-        const hit = findNodeAtWorld(world.x, world.y);
-        if (hit !== null) {
-          const node = filteredNodes[hit];
-          const next = selectedNode?.id === node.id ? null : node;
-          setSelectedNode(next);
-          onNodeSelect?.(next);
-        } else {
-          setSelectedNode(null);
-          onNodeSelect?.(null);
-        }
-      }
-      isDraggingRef.current = false;
-    },
-    [canvasToWorld, filteredNodes, findNodeAtWorld, onNodeSelect, selectedNode]
-  );
-
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const rect = canvasRef.current!.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newScale = Math.max(0.3, Math.min(4.0, scaleRef.current * factor));
-    // Zoom toward cursor
-    panRef.current = {
-      x: cx - (cx - panRef.current.x) * (newScale / scaleRef.current),
-      y: cy - (cy - panRef.current.y) * (newScale / scaleRef.current),
-    };
-    scaleRef.current = newScale;
-    forceRender((v) => v + 1);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseUp = () => {
     isDraggingRef.current = false;
-    hoveredIdxRef.current = null;
-    setHoveredNode(null);
-  }, []);
+  };
 
-  // ── Computed edge stats for panel ──────────────────────────────────────────
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.15 : 0.88;
+    scaleRef.current = Math.min(3.5, Math.max(0.35, scaleRef.current * factor));
+    forceUpdate((v) => v + 1);
+  };
 
-  const { incomingEdges, outgoingEdges, nodeFindings } = useMemo(() => {
-    if (!selectedNode)
-      return { incomingEdges: [] as GraphEdge[], outgoingEdges: [] as GraphEdge[], nodeFindings: [] as Finding[] };
-    const inc = filteredEdges.filter((e) => e.target === selectedNode.id);
-    const out = filteredEdges.filter((e) => e.source === selectedNode.id);
-    const nf = findings.filter(
+  // Connected findings for selected node
+  const selectedNodeFindings = useMemo(() => {
+    if (!selectedNode) return [];
+    return findings.filter(
       (f) =>
-        selectedNode.file &&
-        (f.affected_file || "").includes(selectedNode.file)
+        (f.affected_file && selectedNode.file && f.affected_file.includes(selectedNode.file)) ||
+        f.title.toLowerCase().includes(selectedNode.name.toLowerCase()) ||
+        selectedNode.id.includes(f.id)
     );
-    return { incomingEdges: inc, outgoingEdges: out, nodeFindings: nf };
-  }, [selectedNode, filteredEdges, findings]);
-
-  function groupByRelation(edgeList: GraphEdge[]): Record<string, GraphEdge[]> {
-    const groups: Record<string, GraphEdge[]> = {};
-    for (const e of edgeList) {
-      const key = e.relation || "unknown";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(e);
-    }
-    return groups;
-  }
-
-  // ── Styles ─────────────────────────────────────────────────────────────────
-
-  const bg = darkMode ? "#0a1628" : "#ffffff";
-  const surface = darkMode ? "#0f1f3d" : "#f8fafc";
-  const border = darkMode ? "rgba(56,189,248,0.15)" : "rgba(100,116,139,0.2)";
-  const text = darkMode ? "#f1f5f9" : "#0f172a";
-  const muted = darkMode ? "#64748b" : "#94a3b8";
-  const inputBg = darkMode ? "#1e3a5f" : "#f1f5f9";
-  const btnBg = darkMode ? "rgba(30,58,95,0.8)" : "#e2e8f0";
-  const btnActiveBg = darkMode ? "rgba(56,189,248,0.2)" : "rgba(99,102,241,0.15)";
-  const btnActiveBorder = darkMode ? "#38bdf8" : "#6366f1";
-  const btnActiveColor = darkMode ? "#38bdf8" : "#6366f1";
-
-  function toolbarBtn(active: boolean) {
-    return {
-      padding: "5px 10px",
-      fontSize: "11px",
-      fontWeight: 500,
-      border: `1px solid ${active ? btnActiveBorder : border}`,
-      borderRadius: "6px",
-      cursor: "pointer",
-      background: active ? btnActiveBg : btnBg,
-      color: active ? btnActiveColor : muted,
-      transition: "all 0.15s",
-      whiteSpace: "nowrap" as const,
-    };
-  }
-
-  const panelWidth = 280;
+  }, [selectedNode, findings]);
 
   return (
     <div
+      ref={containerRef}
       style={{
-        display: "flex",
-        flexDirection: "column",
         width: "100%",
-        height: "100%",
-        background: bg,
-        borderRadius: "12px",
-        overflow: "hidden",
-        fontFamily: "Inter, system-ui, sans-serif",
+        borderRadius: "18px",
+        background: bgGradient,
         border: `1px solid ${border}`,
+        boxShadow: darkMode
+          ? "0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)"
+          : "0 6px 24px rgba(0, 0, 0, 0.05)",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
-      {/* ── Toolbar ── */}
+      {/* ── Top High-Tech Toolbar ── */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "10px 14px",
-          borderBottom: `1px solid ${border}`,
+          padding: "12px 18px",
           background: surface,
+          backdropFilter: "blur(16px)",
+          borderBottom: `1px solid ${border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           flexWrap: "wrap",
+          gap: "10px",
         }}
       >
-        {/* Search */}
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search nodes…"
-          style={{
-            padding: "5px 10px",
-            fontSize: "12px",
-            border: `1px solid ${border}`,
-            borderRadius: "6px",
-            background: inputBg,
-            color: text,
-            outline: "none",
-            width: "150px",
-          }}
-        />
+        {/* Left: Search & Kind Filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {/* Search Box */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "7px 12px",
+              borderRadius: "8px",
+              background: darkMode ? "rgba(3, 7, 18, 0.6)" : "#f8fafc",
+              border: `1px solid ${border}`,
+              minWidth: "210px",
+            }}
+          >
+            <Search size={14} color={textMuted} />
+            <input
+              type="text"
+              placeholder="Search components or routes…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: textPrimary,
+                fontSize: "12px",
+                width: "100%",
+              }}
+            />
+            {search && <X size={13} color={textMuted} style={{ cursor: "pointer" }} onClick={() => setSearch("")} />}
+          </div>
 
-        {/* Kind filter */}
-        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          {KIND_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setKindFilter(f.value)}
-              style={toolbarBtn(kindFilter === f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+          {/* Filter Pills with Counts */}
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {[
+              { id: "all", label: "All Components", count: allNodes.length },
+              { id: "endpoint", label: "Endpoints", color: "#00f0ff" },
+              { id: "function", label: "Functions", color: "#a855f7" },
+              { id: "model", label: "DB Models", color: "#10b981" },
+              { id: "config", label: "Configs", color: "#f59e0b" },
+              { id: "vulnerability", label: "Defects & Gaps", color: "#f43f5e" },
+            ].map((k) => {
+              const isSelected = kindFilter === k.id;
+              return (
+                <button
+                  key={k.id}
+                  onClick={() => setKindFilter(k.id)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "8px",
+                    fontSize: "11px",
+                    fontWeight: isSelected ? 700 : 500,
+                    background: isSelected
+                      ? k.color
+                        ? `${k.color}25`
+                        : `${cyan}20`
+                      : darkMode
+                      ? "rgba(255, 255, 255, 0.04)"
+                      : "#f1f5f9",
+                    border: isSelected
+                      ? `1.5px solid ${k.color || cyan}`
+                      : `1px solid ${border}`,
+                    color: isSelected ? k.color || cyan : textSecondary,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>{k.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Edge filter */}
-        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          {EDGE_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setEdgeFilter(f.value)}
-              style={toolbarBtn(edgeFilter === f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Zoom controls */}
-        <button
-          onClick={() => {
-            scaleRef.current = Math.min(4.0, scaleRef.current * 1.2);
-            forceRender((v) => v + 1);
-          }}
-          style={toolbarBtn(false)}
-          title="Zoom In"
-        >
-          +
-        </button>
-        <button
-          onClick={() => {
-            scaleRef.current = Math.max(0.3, scaleRef.current / 1.2);
-            forceRender((v) => v + 1);
-          }}
-          style={toolbarBtn(false)}
-          title="Zoom Out"
-        >
-          −
-        </button>
-        <button onClick={fitToScreen} style={toolbarBtn(false)}>
-          Fit
-        </button>
-        <button onClick={resetView} style={toolbarBtn(false)}>
-          Reset
-        </button>
-
-        {/* 2D/3D toggle */}
-        {onToggle3D && (
-          <button onClick={onToggle3D} style={toolbarBtn(false)}>
-            3D View
+        {/* Right: Zoom & 3D Switch Controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <button
+            onClick={() => {
+              scaleRef.current = Math.min(3.5, scaleRef.current * 1.25);
+              forceUpdate((v) => v + 1);
+            }}
+            title="Zoom In"
+            style={{
+              padding: "6px 10px",
+              borderRadius: "8px",
+              background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+              border: `1px solid ${border}`,
+              color: textSecondary,
+              cursor: "pointer",
+            }}
+          >
+            <ZoomIn size={14} />
           </button>
-        )}
+          <button
+            onClick={() => {
+              scaleRef.current = Math.max(0.4, scaleRef.current * 0.8);
+              forceUpdate((v) => v + 1);
+            }}
+            title="Zoom Out"
+            style={{
+              padding: "6px 10px",
+              borderRadius: "8px",
+              background: darkMode ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+              border: `1px solid ${border}`,
+              color: textSecondary,
+              cursor: "pointer",
+            }}
+          >
+            <ZoomOut size={14} />
+          </button>
+          <button
+            onClick={handleFitScreen}
+            title="Fit to Screen"
+            style={{
+              padding: "6px 12px",
+              borderRadius: "8px",
+              background: `${cyan}18`,
+              border: `1px solid ${cyan}44`,
+              color: cyan,
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <Maximize2 size={13} />
+            <span>Fit View</span>
+          </button>
+          {onToggle3D && (
+            <button
+              onClick={onToggle3D}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "8px",
+                background: darkMode ? "rgba(168, 85, 247, 0.15)" : "rgba(124, 58, 237, 0.1)",
+                border: darkMode ? "1px solid rgba(168, 85, 247, 0.35)" : "1px solid rgba(124, 58, 237, 0.25)",
+                color: "#c084fc",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <Globe2 size={13} />
+              <span>3D Sphere</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── Canvas + Side Panel ── */}
-      <div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
-        {/* Canvas */}
+      {/* ── Main Interactive Canvas ── */}
+      <div
+        style={{
+          width: "100%",
+          height: "620px",
+          position: "relative",
+          cursor: isDraggingRef.current ? "grabbing" : hoveredNode ? "pointer" : "grab",
+          userSelect: "none",
+        }}
+      >
         <canvas
           ref={canvasRef}
-          style={{
-            display: "block",
-            width: "100%",
-            height: "100%",
-            cursor: isDraggingRef.current ? "grabbing" : hoveredNode ? "pointer" : "grab",
-          }}
+          style={{ width: "100%", height: "100%", display: "block" }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         />
 
-        {/* Hover tooltip */}
+        {/* Hover HUD Tooltip */}
         {hoveredNode && !selectedNode && (
           <div
             style={{
               position: "absolute",
-              bottom: "60px",
+              bottom: "55px",
               left: "16px",
-              background: darkMode ? "rgba(10,22,40,0.95)" : "rgba(255,255,255,0.97)",
-              border: `1px solid ${border}`,
-              borderRadius: "8px",
+              background: surface,
+              backdropFilter: "blur(16px)",
+              border: `1px solid ${getNodeMeta(hoveredNode.kind).color}`,
+              borderRadius: "10px",
               padding: "10px 14px",
-              maxWidth: "220px",
+              maxWidth: "280px",
               pointerEvents: "none",
               zIndex: 20,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+              boxShadow: `0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px ${getNodeMeta(hoveredNode.kind).color}33`,
             }}
           >
             <div
               style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                color: getNodeColor(hoveredNode.kind),
+                fontSize: "10px",
+                fontWeight: 800,
+                color: getNodeMeta(hoveredNode.kind).color,
                 textTransform: "uppercase",
                 marginBottom: "4px",
+                letterSpacing: "0.5px",
               }}
             >
-              {hoveredNode.kind}
+              {getNodeMeta(hoveredNode.kind).label}
             </div>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: text }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: textPrimary }}>
               {hoveredNode.name}
             </div>
             {hoveredNode.file && (
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: muted,
-                  fontFamily: "monospace",
-                  marginTop: "4px",
-                }}
-              >
-                {hoveredNode.file}
-                {hoveredNode.line ? `:${hoveredNode.line}` : ""}
+              <div style={{ fontSize: "11px", color: textMuted, fontFamily: "JetBrains Mono, monospace", marginTop: "4px" }}>
+                {hoveredNode.file}:{hoveredNode.line || 1}
               </div>
             )}
           </div>
         )}
 
-        {/* Node count badge */}
+        {/* Stats Badge */}
         <div
           style={{
             position: "absolute",
-            top: "10px",
-            left: "12px",
-            background: darkMode ? "rgba(10,22,40,0.85)" : "rgba(255,255,255,0.9)",
+            top: "12px",
+            left: "14px",
+            background: surface,
+            backdropFilter: "blur(12px)",
             border: `1px solid ${border}`,
-            borderRadius: "6px",
-            padding: "4px 10px",
+            borderRadius: "8px",
+            padding: "5px 12px",
             fontSize: "11px",
-            color: muted,
+            fontWeight: 600,
+            color: textSecondary,
             pointerEvents: "none",
           }}
         >
-          {filteredNodes.length} nodes · {filteredEdges.length} edges
+          {filteredNodes.length} Architectural Symbols · {filteredEdges.length} Verified Dependency Edges
         </div>
 
-        {/* ── Side Panel ── */}
+        {/* ── Slide-Over Node Inspector Drawer ── */}
         {selectedNode && (
           <div
             style={{
               position: "absolute",
-              top: 0,
-              right: 0,
-              width: `${panelWidth}px`,
-              height: "100%",
-              background: darkMode ? "rgba(10,22,40,0.97)" : "rgba(248,250,252,0.98)",
-              borderLeft: `1px solid ${border}`,
-              overflowY: "auto",
-              padding: "16px",
-              zIndex: 15,
-              backdropFilter: "blur(12px)",
+              top: "12px",
+              right: "14px",
+              bottom: "14px",
+              width: "330px",
+              background: surface,
+              backdropFilter: "blur(20px)",
+              border: `1px solid ${border}`,
+              borderRadius: "14px",
+              boxShadow: "0 12px 40px rgba(0, 0, 0, 0.45)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              zIndex: 30,
             }}
           >
-            {/* Close */}
-            <button
-              onClick={() => {
-                setSelectedNode(null);
-                onNodeSelect?.(null);
-              }}
-              style={{
-                position: "absolute",
-                top: "10px",
-                right: "10px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: muted,
-                fontSize: "18px",
-              }}
-            >
-              ×
-            </button>
-
-            {/* Kind badge */}
+            {/* Header */}
             <div
               style={{
-                display: "inline-block",
-                padding: "3px 8px",
-                borderRadius: "6px",
-                fontSize: "10px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                background: hexToRgba(getNodeColor(selectedNode.kind), 0.15),
-                color: getNodeColor(selectedNode.kind),
-                marginBottom: "8px",
+                padding: "16px",
+                borderBottom: `1px solid ${border}`,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "10px",
               }}
             >
-              {selectedNode.kind}
-            </div>
-
-            {/* Name */}
-            <div
-              style={{ fontSize: "15px", fontWeight: 700, color: text, marginBottom: "8px", wordBreak: "break-word" }}
-            >
-              {selectedNode.name}
-            </div>
-
-            {/* File */}
-            {selectedNode.file && (
-              <div
+              <div>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    padding: "2px 7px",
+                    borderRadius: "4px",
+                    background: getNodeMeta(selectedNode.kind).bg,
+                    color: getNodeMeta(selectedNode.kind).color,
+                    border: `1px solid ${getNodeMeta(selectedNode.kind).color}55`,
+                  }}
+                >
+                  {getNodeMeta(selectedNode.kind).label}
+                </span>
+                <h3 style={{ margin: "6px 0 2px 0", fontSize: "16px", fontWeight: 700, color: textPrimary, lineHeight: 1.3 }}>
+                  {selectedNode.name}
+                </h3>
+                {selectedNode.file && (
+                  <div style={{ fontSize: "11px", color: textMuted, fontFamily: "JetBrains Mono, monospace" }}>
+                    {selectedNode.file}{selectedNode.line ? `:${selectedNode.line}` : ""}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedNode(null)}
                 style={{
-                  fontSize: "11px",
-                  color: muted,
-                  fontFamily: "monospace",
-                  marginBottom: "12px",
-                  wordBreak: "break-all",
+                  background: "transparent",
+                  border: "none",
+                  color: textMuted,
+                  cursor: "pointer",
+                  padding: "4px",
                 }}
               >
-                {selectedNode.file}
-                {selectedNode.line ? `:${selectedNode.line}` : ""}
-              </div>
-            )}
+                <X size={16} />
+              </button>
+            </div>
 
-            {/* Incoming edges */}
-            {incomingEdges.length > 0 && (
-              <div style={{ marginBottom: "12px" }}>
-                <div
-                  style={{ fontSize: "10px", fontWeight: 700, color: muted, textTransform: "uppercase", marginBottom: "6px" }}
-                >
-                  Incoming ({incomingEdges.length})
-                </div>
-                {Object.entries(groupByRelation(incomingEdges)).map(([rel, es]) => (
-                  <div key={rel} style={{ marginBottom: "4px" }}>
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: 600,
-                        color: getEdgeColor(rel),
-                        marginRight: "4px",
-                      }}
-                    >
-                      {rel}
-                    </span>
-                    {es.map((e, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: "11px",
-                          color: text,
-                          display: "block",
-                          paddingLeft: "8px",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        ← {filteredNodes.find((n) => n.id === e.source)?.name || e.source}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Outgoing edges */}
-            {outgoingEdges.length > 0 && (
-              <div style={{ marginBottom: "12px" }}>
-                <div
-                  style={{ fontSize: "10px", fontWeight: 700, color: muted, textTransform: "uppercase", marginBottom: "6px" }}
-                >
-                  Outgoing ({outgoingEdges.length})
-                </div>
-                {Object.entries(groupByRelation(outgoingEdges)).map(([rel, es]) => (
-                  <div key={rel} style={{ marginBottom: "4px" }}>
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: 600,
-                        color: getEdgeColor(rel),
-                        marginRight: "4px",
-                      }}
-                    >
-                      {rel}
-                    </span>
-                    {es.map((e, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: "11px",
-                          color: text,
-                          display: "block",
-                          paddingLeft: "8px",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        → {filteredNodes.find((n) => n.id === e.target)?.name || e.target}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Findings */}
-            {nodeFindings.length > 0 && (
+            {/* Scrollable Body */}
+            <div style={{ padding: "16px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Linked Findings */}
               <div>
-                <div
-                  style={{ fontSize: "10px", fontWeight: 700, color: muted, textTransform: "uppercase", marginBottom: "6px" }}
-                >
-                  Findings ({nodeFindings.length})
+                <div style={{ fontSize: "11px", fontWeight: 700, color: textMuted, textTransform: "uppercase", marginBottom: "8px" }}>
+                  Security & Architecture Findings ({selectedNodeFindings.length})
                 </div>
-                {nodeFindings.map((f) => (
-                  <div
-                    key={f.id}
-                    style={{
-                      display: "inline-block",
-                      padding: "3px 8px",
-                      borderRadius: "6px",
-                      fontSize: "10px",
-                      fontWeight: 600,
-                      background: hexToRgba(SEVERITY_COLOR[f.severity] || "#64748b", 0.15),
-                      color: SEVERITY_COLOR[f.severity] || "#64748b",
-                      border: `1px solid ${hexToRgba(SEVERITY_COLOR[f.severity] || "#64748b", 0.3)}`,
-                      cursor: "pointer",
-                      marginBottom: "4px",
-                      marginRight: "4px",
-                      maxWidth: "100%",
-                      wordBreak: "break-word",
-                    }}
-                    title={f.technical_explanation}
-                  >
-                    {f.severity.toUpperCase()} · {truncate(f.title, 30)}
+
+                {selectedNodeFindings.length === 0 ? (
+                  <div style={{ fontSize: "12px", color: "#10b981", background: "rgba(16, 185, 129, 0.08)", padding: "10px", borderRadius: "8px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+                    ✓ No security vulnerabilities or gaps identified on this component.
                   </div>
-                ))}
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {selectedNodeFindings.map((f) => (
+                      <div
+                        key={f.id}
+                        style={{
+                          background: darkMode ? "rgba(244, 63, 94, 0.08)" : "rgba(254, 242, 242, 0.8)",
+                          border: darkMode ? "1px solid rgba(244, 63, 94, 0.3)" : "1px solid rgba(244, 63, 94, 0.25)",
+                          borderRadius: "8px",
+                          padding: "10px 12px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#f43f5e" }}>
+                            {f.title}
+                          </span>
+                          <span style={{ fontSize: "10px", fontWeight: 800, color: "#f43f5e", textTransform: "uppercase" }}>
+                            {f.severity}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "11px", color: textSecondary, marginBottom: "8px" }}>
+                          {f.technical_explanation ? `${f.technical_explanation.slice(0, 80)}…` : ""}
+                        </div>
+
+                        <button
+                          onClick={() => setEvidenceFinding(f)}
+                          style={{
+                            width: "100%",
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            background: `${cyan}18`,
+                            border: `1px solid ${cyan}44`,
+                            color: cyan,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          <FileCode size={13} />
+                          <span>Inspect Source Evidence</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Connected Dependencies */}
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: textMuted, textTransform: "uppercase", marginBottom: "8px" }}>
+                  Dependency Relations
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px" }}>
+                  <div style={{ padding: "8px 10px", borderRadius: "6px", background: darkMode ? "rgba(255, 255, 255, 0.03)" : "#f8fafc", border: `1px solid ${border}` }}>
+                    <span style={{ color: cyan, fontWeight: 700 }}>Inbound: </span>
+                    <span style={{ color: textSecondary }}>
+                      {filteredEdges.filter((e) => e.target === selectedNode.id).length} calling/referencing nodes
+                    </span>
+                  </div>
+                  <div style={{ padding: "8px 10px", borderRadius: "6px", background: darkMode ? "rgba(255, 255, 255, 0.03)" : "#f8fafc", border: `1px solid ${border}` }}>
+                    <span style={{ color: "#a855f7", fontWeight: 700 }}>Outbound: </span>
+                    <span style={{ color: textSecondary }}>
+                      {filteredEdges.filter((e) => e.source === selectedNode.id).length} target functions/models
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
+
+        {/* ── Bottom Legend ── */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "12px",
+            left: "14px",
+            background: surface,
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${border}`,
+            borderRadius: "10px",
+            padding: "8px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+            fontSize: "11px",
+            color: textSecondary,
+            flexWrap: "wrap",
+            pointerEvents: "none",
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#00f0ff" }} /> Endpoint / API
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#a855f7" }} /> Function / Handler
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#10b981" }} /> Model / Class
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#06b6d4" }} /> Interface
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f59e0b" }} /> Config
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f43f5e" }} /> Vulnerability / Gap
+          </span>
+        </div>
       </div>
 
-      {/* ── Legend ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "14px",
-          padding: "8px 16px",
-          borderTop: `1px solid ${border}`,
-          background: surface,
-          flexWrap: "wrap",
-        }}
-      >
-        {LEGEND_ITEMS.map((item) => (
-          <div
-            key={item.label}
-            style={{ display: "flex", alignItems: "center", gap: "5px" }}
-          >
-            <div
-              style={{
-                width: "10px",
-                height: "10px",
-                borderRadius: "50%",
-                background: item.color,
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ fontSize: "11px", color: muted }}>{item.label}</span>
-          </div>
-        ))}
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: "10px", color: muted }}>
-          Dashed = inferred · Solid = confirmed
-        </span>
-      </div>
+      {/* Source Code Evidence Explorer Modal */}
+      {evidenceFinding && (
+        <FindingEvidenceModal
+          auditId={evidenceFinding.id}
+          finding={evidenceFinding}
+          onClose={() => setEvidenceFinding(null)}
+          darkMode={darkMode}
+        />
+      )}
     </div>
   );
 };

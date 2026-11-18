@@ -243,7 +243,15 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+      {/* Responsive 2-column / 1-column layout without clipping */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+          gap: "24px",
+          alignItems: "start",
+        }}
+      >
         {/* Left Column: Repository & Benchmark Selection */}
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -287,7 +295,7 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
               display: "flex",
               flexDirection: "column",
               gap: "8px",
-              maxHeight: "360px",
+              maxHeight: "380px",
               overflowY: "auto",
               paddingRight: "4px",
               marginBottom: "20px",
@@ -326,7 +334,7 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
                       : isHovered
                       ? `0 6px 20px rgba(0, 0, 0, ${darkMode ? "0.35" : "0.08"})`
                       : "none",
-                    transform: isHovered ? "translateY(-2px)" : "none",
+                    transform: isHovered ? "translateY(-1.5px)" : "none",
                     cursor: "pointer",
                     transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
@@ -352,40 +360,17 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
                     {b.description}
                   </div>
 
-                  {/* Intentional Mistakes / Defects Highlighted in this Repo */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: rose, display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                      <AlertCircle size={12} color={rose} /> Mistakes:
-                    </span>
-                    {b.mistakes.map((m) => (
-                      <span
-                        key={m}
-                        style={{
-                          fontSize: "10px",
-                          fontWeight: 700,
-                          padding: "2px 7px",
-                          borderRadius: "4px",
-                          background: darkMode ? "rgba(244, 63, 94, 0.15)" : "rgba(220, 38, 38, 0.1)",
-                          color: rose,
-                          border: darkMode ? "1px solid rgba(244, 63, 94, 0.35)" : "1px solid rgba(220, 38, 38, 0.25)",
-                        }}
-                      >
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {b.tech.map((t) => (
                       <span
                         key={t}
                         style={{
-                          fontSize: "10px",
-                          color: textMuted,
-                          padding: "2px 6px",
+                          fontSize: "10.5px",
+                          color: isSelected ? cyan : textMuted,
+                          padding: "2px 7px",
                           borderRadius: "4px",
-                          background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
-                          border: darkMode ? "1px solid rgba(255, 255, 255, 0.05)" : "1px solid rgba(0, 0, 0, 0.05)",
+                          background: darkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+                          border: darkMode ? "1px solid rgba(255, 255, 255, 0.06)" : "1px solid rgba(0, 0, 0, 0.06)",
                         }}
                       >
                         {t}
