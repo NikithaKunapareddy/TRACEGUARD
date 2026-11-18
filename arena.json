@@ -1,0 +1,25 @@
+{
+  "name": "TraceGuard",
+  "title": "TraceGuard — Architecture-Agnostic Repository Integrity Agent",
+  "description": "Architecture-agnostic software engineering intelligence agent that detects security vulnerabilities, code slop, coding gaps (negative-space omissions), and loose ends across polyglot repositories using an Evidence-Linked Repository Consistency Graph (ERCG).",
+  "track": "AI triage",
+  "repository": "https://github.com/NikithaKunapareddy/TRACEGUARD",
+  "tech_stack": [
+    "Python 3.11+",
+    "FastAPI",
+    "NetworkX",
+    "Tree-sitter",
+    "SQLite",
+    "React 18",
+    "TypeScript",
+    "Three.js",
+    "Vite"
+  ],
+  "commands": {
+    "install": "python -m pip install -e \".[dev]\"",
+    "test": "python -m pytest tests/ -v",
+    "cli": "traceguard audit .",
+    "api": "python -m uvicorn traceguard.api.app:app --host 127.0.0.1 --port 8000",
+    "frontend_build": "cd frontend && npm install && npm run build"
+  }
+}
