@@ -274,12 +274,15 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     <div style={{ padding: "10px 0 30px 0" }}>
       {/* ── Hero Container ─────────────────────────────────────────────────── */}
       <div
+        className="hero-container gemini-glass-card"
         style={{
           borderRadius: "20px",
           background: darkMode
-            ? "linear-gradient(180deg, #0A1224 0%, #070B14 100%)"
-            : "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+            ? "linear-gradient(180deg, rgba(10, 18, 36, 0.85) 0%, rgba(7, 11, 20, 0.92) 100%)"
+            : "linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.82) 100%)",
           border: `1px solid ${borderSubtle}`,
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
           position: "relative",
           overflow: "hidden",
           padding: "54px 36px 48px 36px",
@@ -365,6 +368,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
           {/* ── CTAs & Actions ─────────────────────────────────────────────── */}
           <div
+            className="hero-cta-group"
             style={{
               display: "flex",
               alignItems: "center",
@@ -453,6 +457,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
           {/* ── Verified Product Statistics Bar ────────────────────────────── */}
           <div
+            className="stats-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
@@ -549,18 +554,21 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         </div>
 
         <div
+          className="pillars-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: "18px",
           }}
         >
           {capabilities.map((c) => (
             <div
               key={c.id}
+              className="gemini-glass-card"
               style={{
                 borderRadius: "16px",
-                background: cardBg,
+                background: darkMode ? "rgba(17, 29, 48, 0.85)" : "rgba(255, 255, 255, 0.88)",
+                backdropFilter: "blur(20px)",
                 border: `1px solid ${borderSubtle}`,
                 padding: "24px",
                 display: "flex",

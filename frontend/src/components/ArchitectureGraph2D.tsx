@@ -830,6 +830,50 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
     isDraggingRef.current = false;
   };
 
+  // Mobile & Tablet Touch Support (Pan and Tap)
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      isDraggingRef.current = true;
+      dragStartRef.current = {
+        x: touch.clientX - panRef.current.x,
+        y: touch.clientY - panRef.current.y,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (isDraggingRef.current && e.touches.length === 1) {
+      const touch = e.touches[0];
+      panRef.current = {
+        x: touch.clientX - dragStartRef.current.x,
+        y: touch.clientY - dragStartRef.current.y,
+      };
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    isDraggingRef.current = false;
+    const canvas = canvasRef.current;
+    if (!canvas || e.changedTouches.length === 0) return;
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const mx = (touch.clientX - rect.left - panRef.current.x) / scaleRef.current;
+    const my = (touch.clientY - rect.top - panRef.current.y) / scaleRef.current;
+    let clickedNode: GraphNode | null = null;
+    positionsRef.current.forEach((pos, i) => {
+      const dx = pos.x - mx;
+      const dy = pos.y - my;
+      if (Math.sqrt(dx * dx + dy * dy) <= 24) {
+        clickedNode = filteredNodes[i] || null;
+      }
+    });
+    if (clickedNode) {
+      setSelectedNode(clickedNode);
+      if (onNodeSelect) onNodeSelect(clickedNode);
+    }
+  };
+
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 0.88;
@@ -1038,20 +1082,24 @@ export const ArchitectureGraph2D: React.FC<ArchitectureGraph2DProps> = ({
       <div
         style={{
           width: "100%",
-          height: "620px",
+          height: "clamp(380px, 55vh, 620px)",
           position: "relative",
           cursor: isDraggingRef.current ? "grabbing" : hoveredNode ? "pointer" : "grab",
           userSelect: "none",
+          touchAction: "none",
         }}
       >
         <canvas
           ref={canvasRef}
-          style={{ width: "100%", height: "100%", display: "block" }}
+          style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         />
 
         {/* Empty state overlay when filtered category has 0 symbols */}

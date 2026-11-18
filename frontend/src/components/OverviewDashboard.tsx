@@ -50,12 +50,13 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   const textMuted = darkMode ? "#64748b" : "#94a3b8";
 
   const cardStyle: React.CSSProperties = {
-    background: darkMode ? "rgba(15, 23, 42, 0.75)" : "#ffffff",
-    backdropFilter: "blur(16px)",
-    border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
+    background: darkMode ? "rgba(16, 26, 43, 0.82)" : "rgba(255, 255, 255, 0.85)",
+    backdropFilter: "blur(20px)",
+    WebkitBackdropFilter: "blur(20px)",
+    border: darkMode ? "1px solid rgba(56, 189, 248, 0.15)" : "1px solid rgba(255, 255, 255, 0.9)",
     borderRadius: "16px",
     padding: "22px",
-    boxShadow: darkMode ? "0 4px 20px rgba(0, 0, 0, 0.2)" : "0 4px 16px rgba(0, 0, 0, 0.04)",
+    boxShadow: darkMode ? "0 10px 30px rgba(0, 0, 0, 0.4)" : "0 8px 24px rgba(148, 163, 184, 0.12)",
   };
 
   const criticalCount = findings.filter((f) => f.severity === "critical").length;
@@ -151,6 +152,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
 
       {/* 4 Score Dimension Cards */}
       <div
+        className="overview-metrics-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",

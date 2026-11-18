@@ -189,17 +189,26 @@ export const App: React.FC = () => {
     : "Repository";
 
   return (
-    <div style={{ maxWidth: "1340px", margin: "0 auto", padding: "20px 20px 40px 20px" }}>
-      {/* Universal Clean Header */}
-      <CyberHeader
-        serverHealth={serverHealth}
-        darkMode={darkMode}
-        onToggleTheme={handleToggleTheme}
-        onNavigateLanding={() => setCurrentView("landing")}
-        onNavigateWorkspace={() => setCurrentView("workspace")}
-        onNavigateHistory={() => setCurrentView("history")}
-        currentView={currentView}
-      />
+    <>
+      {/* Google Gemini-Style Living Atmospheric Aurora Background */}
+      <div className="gemini-ambient-bg" aria-hidden="true">
+        <div className="aurora-floating-orb orb-1" />
+        <div className="aurora-floating-orb orb-2" />
+        <div className="aurora-floating-orb orb-3" />
+        <div className="aurora-floating-orb orb-4" />
+      </div>
+
+      <div className="app-main-layout">
+        {/* Universal Clean Header */}
+        <CyberHeader
+          serverHealth={serverHealth}
+          darkMode={darkMode}
+          onToggleTheme={handleToggleTheme}
+          onNavigateLanding={() => setCurrentView("landing")}
+          onNavigateWorkspace={() => setCurrentView("workspace")}
+          onNavigateHistory={() => setCurrentView("history")}
+          currentView={currentView}
+        />
 
       {/* ======================================================== */}
       {/* 1. PRODUCT LANDING PAGE VIEW                            */}
@@ -267,6 +276,7 @@ export const App: React.FC = () => {
         <div>
           {/* Active Audit Context & Action Bar */}
           <div
+            className="dashboard-header-bar"
             style={{
               background: cardBg,
               backdropFilter: "blur(16px)",
@@ -351,6 +361,7 @@ export const App: React.FC = () => {
 
           {/* 7 Clean Navigation Tabs */}
           <div
+            className="dashboard-tabs-container no-scrollbar"
             style={{
               display: "flex",
               gap: "8px",
@@ -358,6 +369,7 @@ export const App: React.FC = () => {
               paddingBottom: "12px",
               marginBottom: "24px",
               overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
             }}
           >
             {tabs.map((tab) => {
@@ -601,5 +613,6 @@ export const App: React.FC = () => {
         </div>
       </footer>
     </div>
+  </>
   );
 };

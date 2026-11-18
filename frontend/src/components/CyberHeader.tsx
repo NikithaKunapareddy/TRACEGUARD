@@ -33,6 +33,7 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
   return (
     <header style={{ marginBottom: "24px" }}>
       <div
+        className="cyber-header-inner"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -49,6 +50,7 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
       >
         {/* Logo + Branding (Clicking returns to Landing) */}
         <div
+          className="cyber-header-left"
           onClick={onNavigateLanding}
           style={{
             display: "flex",
@@ -68,6 +70,7 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
               alignItems: "center",
               justifyContent: "center",
               boxShadow: `0 0 18px ${cyan}55`,
+              flexShrink: 0,
             }}
           >
             <Shield size={22} color="#ffffff" />
@@ -75,6 +78,7 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span
+                className="cyber-header-brand-name"
                 style={{
                   fontSize: "22px",
                   fontWeight: 800,
@@ -94,19 +98,20 @@ export const CyberHeader: React.FC<CyberHeaderProps> = ({
                   color: cyan,
                   border: `1px solid ${cyan}44`,
                   letterSpacing: "0.5px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 v1.0.0
               </span>
             </div>
-            <p style={{ margin: "2px 0 0 0", color: textMuted, fontSize: "12px" }}>
+            <p className="cyber-header-subtitle" style={{ margin: "2px 0 0 0", color: textMuted, fontSize: "12px" }}>
               Architecture-Agnostic Repository Integrity Agent
             </p>
           </div>
         </div>
 
         {/* Right Navigation & Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div className="cyber-header-controls" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {/* Quick Nav Links */}
           {currentView !== "workspace" && onNavigateWorkspace && (
             <button

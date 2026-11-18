@@ -692,10 +692,52 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       camera.position.z = Math.max(30, Math.min(180, camera.position.z + e.deltaY * 0.08));
     };
 
+    // Mobile & Tablet Touch Support (Orbit Drag & Pinch Zoom)
+    let touchStartPos = { x: 0, y: 0 };
+    let initialPinchDist = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDist = Math.sqrt(dx * dx + dy * dy);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && isDragging) {
+        const deltaX = e.touches[0].clientX - touchStartPos.x;
+        const deltaY = e.touches[0].clientY - touchStartPos.y;
+        touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+
+        nodeGroup.rotation.y += deltaX * 0.008;
+        nodeGroup.rotation.x += deltaY * 0.008;
+        edgeGroup.rotation.y += deltaX * 0.008;
+        edgeGroup.rotation.x += deltaY * 0.008;
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const factor = (initialPinchDist - dist) * 0.15;
+        camera.position.z = Math.max(30, Math.min(180, camera.position.z + factor));
+        initialPinchDist = dist;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isDragging = false;
+    };
+
     container.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
     container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     // J. Render Loop
     let animId: number;
@@ -751,6 +793,9 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       window.removeEventListener("mousemove", handleWindowMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
       container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
       window.removeEventListener("resize", handleResize);
       photons.forEach((p) => scene.remove(p.mesh));
       renderer.dispose();
@@ -784,9 +829,10 @@ export const ConsistencyGraph3D: React.FC<ConsistencyGraph3DProps> = ({
       style={{
         position: "relative",
         width: "100%",
-        height: "580px",
+        height: "clamp(400px, 60vh, 600px)",
         borderRadius: "18px",
         overflow: "hidden",
+        touchAction: "none",
         border: darkMode ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid #cbd5e1",
         background: darkMode
           ? "radial-gradient(circle at 50% 50%, #0d1838 0%, #050914 100%)"

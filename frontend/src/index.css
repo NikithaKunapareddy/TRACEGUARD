@@ -58,14 +58,7 @@
 }
 
 [data-theme="light"] body {
-  background-color: #f0f4f8;
-  background-image:
-    radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.07) 0%, transparent 40%),
-    radial-gradient(circle at 85% 25%, rgba(124, 58, 237, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 50% 90%, rgba(5, 150, 105, 0.05) 0%, transparent 50%),
-    linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  background-color: #f8faff;
   color: #0f172a;
 }
 
@@ -85,13 +78,162 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
-  background-image:
-    radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 25%, rgba(168, 85, 247, 0.06) 0%, transparent 40%),
-    radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  position: relative;
+}
+
+/* ========= GEMINI-STYLE AMBIENT AURORA BACKGROUND ========= */
+.gemini-ambient-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* Light Theme: Luminous Ethereal Gemini Mesh with Soft Sky Blue, Radiant Violet, Sunrise Rose & Fresh Mint */
+[data-theme="light"] .gemini-ambient-bg {
+  background:
+    radial-gradient(circle at 10% 12%, rgba(56, 189, 248, 0.28) 0%, transparent 48%),
+    radial-gradient(circle at 90% 16%, rgba(168, 85, 247, 0.24) 0%, transparent 50%),
+    radial-gradient(circle at 50% 45%, rgba(251, 146, 60, 0.15) 0%, transparent 52%),
+    radial-gradient(circle at 18% 85%, rgba(52, 211, 153, 0.20) 0%, transparent 46%),
+    radial-gradient(circle at 82% 82%, rgba(14, 165, 233, 0.22) 0%, transparent 48%),
+    linear-gradient(180deg, #f8faff 0%, #f1f5f9 100%);
+}
+
+/* Dark Theme: Deep Cosmic Space with Glowing Electric Cyan, Violet Nebula & Cosmic Emerald */
+:root:not([data-theme="light"]) .gemini-ambient-bg {
+  background:
+    radial-gradient(circle at 12% 15%, rgba(0, 240, 255, 0.18) 0%, transparent 46%),
+    radial-gradient(circle at 88% 20%, rgba(168, 85, 247, 0.20) 0%, transparent 50%),
+    radial-gradient(circle at 50% 55%, rgba(59, 130, 246, 0.16) 0%, transparent 52%),
+    radial-gradient(circle at 18% 85%, rgba(16, 185, 129, 0.14) 0%, transparent 46%),
+    radial-gradient(circle at 85% 82%, rgba(139, 92, 246, 0.18) 0%, transparent 48%),
+    linear-gradient(180deg, #070B14 0%, #0B1220 100%);
+}
+
+/* Gentle Living Aurora Animations for Floating Gemini Mesh Orbs */
+@keyframes geminiFloat1 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -40px) scale(1.08);
+  }
+  66% {
+    transform: translate(-25px, 20px) scale(0.95);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes geminiFloat2 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-35px, 30px) scale(1.06);
+  }
+  66% {
+    transform: translate(25px, -25px) scale(0.96);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes geminiFloat3 {
+  0% {
+    transform: translate(0px, 0px) scale(0.98);
+  }
+  50% {
+    transform: translate(20px, 35px) scale(1.08);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(0.98);
+  }
+}
+
+.aurora-floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(75px);
+  opacity: 0.85;
+}
+
+[data-theme="light"] .aurora-floating-orb.orb-1 {
+  top: -10%;
+  left: 5%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(56, 189, 248, 0.08) 60%, transparent 75%);
+  animation: geminiFloat1 22s ease-in-out infinite;
+}
+
+[data-theme="light"] .aurora-floating-orb.orb-2 {
+  top: 5%;
+  right: -5%;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.30) 0%, rgba(168, 85, 247, 0.06) 60%, transparent 75%);
+  animation: geminiFloat2 26s ease-in-out infinite;
+}
+
+[data-theme="light"] .aurora-floating-orb.orb-3 {
+  bottom: 10%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.28) 0%, rgba(52, 211, 153, 0.06) 60%, transparent 75%);
+  animation: geminiFloat3 20s ease-in-out infinite;
+}
+
+[data-theme="light"] .aurora-floating-orb.orb-4 {
+  bottom: 0%;
+  right: 15%;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.22) 0%, rgba(244, 63, 94, 0.06) 60%, transparent 75%);
+  animation: geminiFloat1 24s ease-in-out infinite reverse;
+}
+
+:root:not([data-theme="light"]) .aurora-floating-orb.orb-1 {
+  top: -10%;
+  left: 5%;
+  width: 540px;
+  height: 540px;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.22) 0%, rgba(0, 240, 255, 0.04) 60%, transparent 75%);
+  animation: geminiFloat1 22s ease-in-out infinite;
+}
+
+:root:not([data-theme="light"]) .aurora-floating-orb.orb-2 {
+  top: 5%;
+  right: -5%;
+  width: 580px;
+  height: 580px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, rgba(168, 85, 247, 0.05) 60%, transparent 75%);
+  animation: geminiFloat2 26s ease-in-out infinite;
+}
+
+:root:not([data-theme="light"]) .aurora-floating-orb.orb-3 {
+  bottom: 10%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.03) 60%, transparent 75%);
+  animation: geminiFloat3 20s ease-in-out infinite;
+}
+
+:root:not([data-theme="light"]) .aurora-floating-orb.orb-4 {
+  bottom: 0%;
+  right: 15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.20) 0%, rgba(37, 99, 235, 0.04) 60%, transparent 75%);
+  animation: geminiFloat1 24s ease-in-out infinite reverse;
 }
 
 code,
@@ -240,4 +382,155 @@ pre,
 .hero-glow-dark {
   animation: heroPulseGlow 4s ease-in-out infinite;
 }
+
+/* ========================================================================= */
+/* GEMINI-GRADE GLASSMORPHISM & WORLD-CLASS UI UTILITIES                      */
+/* ========================================================================= */
+
+.app-main-layout {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: clamp(12px, 2.5vw, 24px) clamp(10px, 2.5vw, 22px) 48px clamp(10px, 2.5vw, 22px);
+  position: relative;
+  z-index: 1;
+}
+
+.gemini-glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-card);
+  border-radius: 18px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .gemini-glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(148, 163, 184, 0.12), 0 1px 3px rgba(148, 163, 184, 0.08);
+}
+
+:root:not([data-theme="light"]) .gemini-glass-card {
+  background: rgba(16, 26, 43, 0.78);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Smooth horizontal scrollbar with hidden styling for tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch-friendly ergonomics */
+button, select, input, a {
+  touch-action: manipulation;
+}
+
+/* ========================================================================= */
+/* PRODUCTION MOBILE & TABLET RESPONSIVE SYSTEM                             */
+/* ========================================================================= */
+
+/* TABLET BREAKPOINT (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .pillars-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* INTERMEDIATE BREAKPOINT (max-width: 900px) */
+@media (max-width: 900px) {
+  .workspace-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .overview-metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* TABLET/MOBILE HEADER & GENERAL COLLAPSE (max-width: 768px) */
+@media (max-width: 768px) {
+  .cyber-header-inner {
+    padding: 12px 14px !important;
+    gap: 12px !important;
+  }
+  .cyber-header-subtitle {
+    display: none !important;
+  }
+  .cyber-header-brand-name {
+    font-size: 19px !important;
+  }
+  .cyber-header-controls {
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* MOBILE PHONES (max-width: 640px) */
+@media (max-width: 640px) {
+  .app-main-layout {
+    padding-top: 10px !important;
+    padding-bottom: 32px !important;
+  }
+  .cyber-header-inner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .cyber-header-left {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .cyber-header-controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  .hero-container {
+    padding: 32px 16px 28px 16px !important;
+    border-radius: 16px !important;
+  }
+  .hero-cta-group {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  .hero-cta-group button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .pillars-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .overview-metrics-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-header-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .categories-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ULTRA COMPACT MOBILE (max-width: 380px) */
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .cyber-header-brand-name {
+    font-size: 17px !important;
+  }
+}
+
 

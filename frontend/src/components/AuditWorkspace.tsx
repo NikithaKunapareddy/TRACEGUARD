@@ -347,9 +347,10 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
 
       {/* ── 2-Column Responsive Workspace Grid ──────────────────────────────── */}
       <div
+        className="workspace-grid"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(440px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
           gap: "24px",
           alignItems: "start",
         }}
@@ -358,11 +359,13 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
         {/* Left Column: Repository Target Selection                            */}
         {/* ==================================================================== */}
         <div
+          className="gemini-glass-card"
           style={{
-            background: panelBg,
+            background: darkMode ? "rgba(16, 26, 43, 0.85)" : "rgba(255, 255, 255, 0.85)",
             borderRadius: "18px",
             border: `1px solid ${borderSubtle}`,
             padding: "26px",
+            backdropFilter: "blur(20px)",
             boxShadow: darkMode ? "0 16px 40px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
           }}
         >
@@ -618,11 +621,13 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
         {/* Right Column: Audit Configuration Matrix & Execution                */}
         {/* ==================================================================== */}
         <div
+          className="gemini-glass-card"
           style={{
-            background: panelBg,
+            background: darkMode ? "rgba(16, 26, 43, 0.85)" : "rgba(255, 255, 255, 0.85)",
             borderRadius: "18px",
             border: `1px solid ${borderSubtle}`,
             padding: "26px",
+            backdropFilter: "blur(20px)",
             boxShadow: darkMode ? "0 16px 40px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
           }}
         >
@@ -664,7 +669,7 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({
                 )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="categories-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 {inspectionDimensions.map((dim) => {
                   const isChecked = categories.includes(dim.key);
                   const isAllMode = categories.length === 0;
